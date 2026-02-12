@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Coupons (3 candidates)</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <h1>クーポン候補（3つ）</h1>
+  <p class="muted">3つの中から1つ選んでください。やり直しもできます。</p>
+
+  <div class="toolbar">
+    <button class="primary" id="regenBtn">候補を生成 / やり直し</button>
+    <a class="btn secondary" href="home.html">ホームへ戻る</a>
+  </div>
+
+  <div style="height:12px;"></div>
+  <div id="grid" class="grid"></div>
+
+  <script src="../app.js"></script>
+  <script>
+    requireLoginFromPages();
+
+    function render(candidates){
+      if(!candidates || candidates.length === 0){
+        qs("#grid").innerHTML = `<p class="muted">まだ候補がありません。「候補を生成」を押してください。</p>`;
+        return;
+      }
+      qs("#grid").innerHTML = candidates.map(c => `
+        <div class="coupon">
+          <div><strong>${c.title}</strong></div>
+          <div class="muted">割引: ${c.off} 円</div>
+          <div class="badges">${(c.tags||[]).map(t => `<span class="badge">${t}</span>`).join("")}</div>
+          <div class="toolbar">
+            <button data-id="${c.id}" class="primary selectBtn">これにする</button>
+          </div>
+        </div>
+      `).join("");
+
+      qsa(".selectBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          try {
+            selectCandidate(id);
+            alert("選択しました！ホームで確認できます。");
+            location.href = "home.html";
+          } catch (e) {
+            alert(e.message ?? "失敗しました");
+          }
+        });
+      });
+    }
+
+    // 初回表示：既存候補があれば表示
+    render(loadMyData().candidates);
+
+    on("#regenBtn", "click", () => {
+      const candidates = generateCandidates();
+      render(candidates);
+    });
+  </script>
+</body>
+</html>

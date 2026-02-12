@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Register</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <h1>新規登録（デモ）</h1>
+
+  <div class="card row">
+    <label>名前</label>
+    <input id="name" placeholder="例: 山田太郎">
+
+    <label>年齢</label>
+    <input id="age" type="number" placeholder="例: 20">
+
+    <label>メモ（任意）</label>
+    <input id="memo" placeholder="例: よく行く店など">
+
+    <div class="toolbar">
+      <button class="primary" id="saveBtn">登録してログイン画面へ</button>
+      <a class="btn secondary" href="../index.html">戻る</a>
+    </div>
+
+    <p class="muted">※デモ：登録後はログイン画面に戻ります（IDは自分で決めて入力）。</p>
+  </div>
+
+  <script src="../app.js"></script>
+  <script>
+    on("#saveBtn", "click", () => {
+      const name = qs("#name").value.trim();
+      const age = qs("#age").value.trim();
+      const memo = qs("#memo").value.trim();
+
+      // 仮：ログインしてない状態でも登録できるように、一時保存だけする
+      saveJSON("hk_register_draft_v1", { name, age, memo, at: Date.now() });
+      alert("登録内容を保存しました。ログイン画面でIDを入力してログインしてください。");
+      location.href = "../index.html";
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+body{
+  font-family: system-ui, -apple-system, sans-serif;
+  max-width: 760px;
+  margin: 32px auto;
+  padding: 0 16px;
+}
+h1{ margin: 0 0 16px; }
+.card{
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 16px;
+}
+.row{ display: grid; gap: 10px; }
+label{ font-size: 14px; opacity: .8; }
+input, select{
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+button, .btn{
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  text-align: center;
+  display: inline-block;
+}
+button.primary, .btn.primary{
+  border-color: #111;
+}
+button.secondary, .btn.secondary{
+  opacity: .85;
+}
+.toolbar{ display:flex; gap:10px; flex-wrap: wrap; margin-top: 12px; }
+.grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 700px){
+  .grid{ grid-template-columns: 1fr; }
+}
+.coupon{
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 12px;
+}
+.badges{ display:flex; gap:6px; flex-wrap: wrap; margin-top: 6px; }
+.badge{
+  border: 1px solid #eee;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 12px;
+  opacity: .9;
+}
+.muted{ opacity: .75; }
+hr{ border:none; border-top: 1px solid #eee; margin: 14px 0; }
+a{ color: inherit; }
+.msg{ color:#b00020; }

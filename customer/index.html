@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>ログイン（デモ）</h1>
+
+  <div class="card row">
+    <label>ユーザーID（適当にOK）</label>
+    <input id="userId" placeholder="例: user001" />
+
+    <div class="toolbar">
+      <button class="primary" id="loginBtn">ログイン</button>
+      <a class="btn secondary" href="pages/register.html">新規登録</a>
+    </div>
+
+    <p class="muted">※DBは後で。今は入力したIDでログイン扱いになります。</p>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // 既にログイン済みならhomeへ
+    if (getUserId()) location.href = "pages/home.html";
+
+    on("#loginBtn", "click", () => {
+      const userId = qs("#userId").value.trim();
+      if (!userId) { alert("IDを入力してください"); return; }
+      loginDemo(userId);
+      location.href = "pages/home.html";
+    });
+  </script>
+</body>
+</html>

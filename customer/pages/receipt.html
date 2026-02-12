@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Receipt</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <h1>レシート読み込み（デモ）</h1>
+
+  <div class="card row">
+    <label>レシート画像</label>
+    <input id="file" type="file" accept="image/*" />
+    <img id="preview" style="max-width:100%; display:none; border-radius:12px; border:1px solid #eee;" />
+
+    <label>店名（手入力でOK）</label>
+    <input id="store" placeholder="例: セブンイレブン">
+
+    <label>合計金額（手入力でOK）</label>
+    <input id="total" type="number" placeholder="例: 1280">
+
+    <div class="toolbar">
+      <button class="primary" id="saveBtn">保存</button>
+      <a class="btn secondary" href="home.html">ホームへ戻る</a>
+    </div>
+
+    <p class="muted">※OCRは後で。今は画像＋店名＋金額を保存します。</p>
+  </div>
+
+  <script src="../app.js"></script>
+  <script>
+    requireLoginFromPages();
+
+    let imageDataUrl = null;
+
+    on("#file", "change", async (e) => {
+      const file = e.target.files?.[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        imageDataUrl = reader.result;
+        const img = qs("#preview");
+        img.src = imageDataUrl;
+        img.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 既存データを表示
+    const data = loadMyData();
+    if(data.receipt){
+      qs("#store").value = data.receipt.store ?? "";
+      qs("#total").value = data.receipt.total ?? "";
+      if(data.receipt.imageDataUrl){
+        imageDataUrl = data.receipt.imageDataUrl;
+        const img = qs("#preview");
+        img.src = imageDataUrl;
+        img.style.display = "block";
+      }
+    }
+
+    on("#saveBtn", "click", () => {
+      const store = qs("#store").value.trim();
+      const total = Number(qs("#total").value);
+
+      saveMyData(d => {
+        d.receipt = {
+          store,
+          total: Number.isFinite(total) ? total : null,
+          imageDataUrl,
+          savedAt: Date.now()
+        };
+        return d;
+      });
+
+      alert("保存しました");
+      location.href = "home.html";
+    });
+  </script>
+</body>
+</html>
