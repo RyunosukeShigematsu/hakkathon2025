@@ -1,44 +1,90 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Register</title>
   <link rel="stylesheet" href="../style.css" />
 </head>
+
 <body>
   <h1>新規登録（デモ）</h1>
 
   <div class="card row">
+    <label>ユーザーID（ログインに使用します）</label>
+    <input id="userId" placeholder="例: user001">
+
     <label>名前</label>
     <input id="name" placeholder="例: 山田太郎">
 
     <label>年齢</label>
     <input id="age" type="number" placeholder="例: 20">
 
+    <label>性別</label>
+    <select id="gender">
+      <option value="unknown">選択しない</option>
+      <option value="male">男性</option>
+      <option value="female">女性</option>
+      <option value="other">その他</option>
+    </select>
+
+    <label>好きなジャンル（複数選択可）</label>
+    <div id="prefContainer"
+      style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #ddd; padding: 12px; border-radius: 10px;">
+      <label><input type="checkbox" name="pref" value="バル"> バル</label>
+      <label><input type="checkbox" name="pref" value="カフェ"> カフェ</label>
+      <label><input type="checkbox" name="pref" value="イタリアン"> イタリアン</label>
+      <label><input type="checkbox" name="pref" value="居酒屋"> 居酒屋</label>
+      <label><input type="checkbox" name="pref" value="スイーツ"> スイーツ</label>
+      <label><input type="checkbox" name="pref" value="お酒"> お酒</label>
+    </div>
+
     <label>メモ（任意）</label>
-    <input id="memo" placeholder="例: よく行く店など">
+    <input id="memo" placeholder="例: 中野によく来ます">
 
     <div class="toolbar">
       <button class="primary" id="saveBtn">登録してログイン画面へ</button>
       <a class="btn secondary" href="../index.html">戻る</a>
     </div>
 
-    <p class="muted">※デモ：登録後はログイン画面に戻ります（IDは自分で決めて入力）。</p>
+    <p class="muted">※登録したIDをログイン画面で入力してください。</p>
   </div>
 
   <script src="../app.js"></script>
   <script>
     on("#saveBtn", "click", () => {
+      const userId = qs("#userId").value.trim();
       const name = qs("#name").value.trim();
-      const age = qs("#age").value.trim();
+      const age = Number(qs("#age").value);
+      const gender = qs("#gender").value;
       const memo = qs("#memo").value.trim();
 
-      // 仮：ログインしてない状態でも登録できるように、一時保存だけする
-      saveJSON("hk_register_draft_v1", { name, age, memo, at: Date.now() });
-      alert("登録内容を保存しました。ログイン画面でIDを入力してログインしてください。");
+      if (!userId) { alert("ユーザーIDを入力してください"); return; }
+
+      // チェックボックスの値を配列で取得
+      const preferences = [...qsa('input[name="pref"]:checked')].map(el => el.value);
+
+      // 全ユーザーデータを読み込み、新しいユーザーを追加
+      const all = loadAllUserData();
+
+      // app.js の初期構造（DEFAULT_USER_DATA）に基づいた保存
+      all[userId] = {
+        profile: { name, age, gender, preferences, memo },
+        receipt: { store: "", total: 0, visitTime: "", imageDataUrl: null },
+        candidates: [],
+        couponsOwned: [],
+        logs: [],
+        retries: 0,
+        isRetryActive: false
+      };
+
+      saveJSON(KEY_USERDATA, all);
+
+      alert(`登録が完了しました！\nID: ${userId} でログインしてください。`);
       location.href = "../index.html";
     });
   </script>
 </body>
+
 </html>

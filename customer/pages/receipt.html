@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Receipt</title>
   <link rel="stylesheet" href="../style.css" />
 </head>
+
 <body>
   <h1>レシート読み込み（デモ）</h1>
 
@@ -36,7 +38,7 @@
 
     on("#file", "change", async (e) => {
       const file = e.target.files?.[0];
-      if(!file) return;
+      if (!file) return;
       const reader = new FileReader();
       reader.onload = () => {
         imageDataUrl = reader.result;
@@ -49,10 +51,10 @@
 
     // 既存データを表示
     const data = loadMyData();
-    if(data.receipt){
+    if (data.receipt) {
       qs("#store").value = data.receipt.store ?? "";
       qs("#total").value = data.receipt.total ?? "";
-      if(data.receipt.imageDataUrl){
+      if (data.receipt.imageDataUrl) {
         imageDataUrl = data.receipt.imageDataUrl;
         const img = qs("#preview");
         img.src = imageDataUrl;
@@ -60,23 +62,37 @@
       }
     }
 
+    // receipt.html の saveBtn クリックイベント内
     on("#saveBtn", "click", () => {
       const store = qs("#store").value.trim();
       const total = Number(qs("#total").value);
 
+      if (!store || isNaN(total)) {
+        alert("店名と金額を入力してください");
+        return;
+      }
+
       saveMyData(d => {
         d.receipt = {
           store,
-          total: Number.isFinite(total) ? total : null,
+          total: total,
           imageDataUrl,
           savedAt: Date.now()
         };
+        // 金額に応じたやり直し回数を付与
+        d.retries = Math.floor(total / 500);
+        // クーポン画面に飛んだ時に新規生成させるため、一旦候補を空にする
+        d.candidates = [];
+        // やり直しを有効化
+        d.isRetryActive = true;
         return d;
       });
 
-      alert("保存しました");
-      location.href = "home.html";
+      alert(`レシートを保存しました！クーポン抽選画面へ進みます。`);
+      // ★ 直接クーポン画面へ遷移
+      location.href = "coupons.html";
     });
   </script>
 </body>
+
 </html>

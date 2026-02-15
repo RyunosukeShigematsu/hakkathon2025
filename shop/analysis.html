@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Shop - AI Analysis</title>
+    <link rel="stylesheet" href="../style.css" />
+    <style>
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .chart-section {
+            margin-bottom: 24px;
+        }
+
+        .chart-bar-container {
+            background: #eee;
+            border-radius: 12px;
+            height: 16px;
+            width: 100%;
+            margin: 6px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chart-bar {
+            background: #007aff;
+            height: 100%;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chart-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .log-item {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 12px 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .tag-rank {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            background: #333;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+        .status-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        .bg-red {
+            background: #ffe5e5;
+            color: #ff3b30;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>AI マーケティング分析</h1>
+    <p class="muted">ユーザー行動から中野レンガ坂の最適解を抽出します。</p>
+
+    <div class="analysis-grid">
+
+        <div class="card">
+            <h3>📦 クーポン配布・在庫状況</h3>
+            <div id="stockStatus"></div>
+        </div>
+
+        <div class="card">
+            <h3>🎯 潜在需要分析（タグ・ジャンル）</h3>
+            <div id="tagRanking"></div>
+        </div>
+
+        <div class="card">
+            <h3>📄 最新のユーザー行動履歴</h3>
+            <div id="rawLogs" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+
+    </div>
+
+    <div class="toolbar" style="margin-top:20px;">
+        <a href="index.html" class="btn secondary">ダッシュボードへ戻る</a>
+    </div>
+
+    <script src="../customer/app.js"></script>
+    <script>
+        const KEY_USERDATA = "hk_userdata_v1";
+        const KEY_SHARED_POOL = "hk_shared_coupon_pool_v1";
+
+        function analyze() {
+            const allUserData = JSON.parse(localStorage.getItem(KEY_USERDATA)) || {};
+            const pool = JSON.parse(localStorage.getItem(KEY_SHARED_POOL)) || [];
+
+            const tagStats = {};
+            const rawLogs = [];
+
+            // 1. 全ユーザーのログを集計
+            Object.values(allUserData).forEach(user => {
+                if (!user.logs) return;
+                user.logs.forEach(log => {
+                    // 興味関心(Preferences)の傾向分析
+                    if (log.userProfile && log.userProfile.preferences) {
+                        log.userProfile.preferences.forEach(p => {
+                            tagStats[p] = (tagStats[p] || 0) + 1;
+                        });
+                    }
+                    rawLogs.push(log);
+                });
+            });
+
+            // 2. 在庫状況（配布率）の描画
+            document.querySelector("#stockStatus").innerHTML = pool.map(c => {
+                const used = c.initialStock - c.remainingStock;
+                const rate = Math.floor((used / c.initialStock) * 100);
+                const isLow = c.remainingStock <= 5;
+
+                return `
+                    <div class="chart-section">
+                        <div class="chart-label">
+                            <span>${c.title} ${isLow ? '<span class="status-badge bg-red">残りわずか</span>' : ''}</span>
+                            <span>配布率 ${rate}% (${c.remainingStock}枚/残)</span>
+                        </div>
+                        <div class="chart-bar-container">
+                            <div class="chart-bar" style="width: ${rate}%; background: ${rate > 80 ? '#ff3b30' : '#007aff'}"></div>
+                        </div>
+                    </div>
+                `;
+            }).join("") || "<p class='muted'>公開中のクーポンがありません</p>";
+
+            // 3. 需要予測（人気タグ）の描画
+            const sortedTags = Object.entries(tagStats).sort((a, b) => b[1] - a[1]);
+            document.querySelector("#tagRanking").innerHTML = sortedTags.map(([tag, count], idx) => `
+                <div style="margin-bottom:12px; display:flex; align-items:center;">
+                    <span class="tag-rank">${idx + 1}</span>
+                    <span style="flex-grow:1; font-size:14px;"><strong>${tag}</strong> に対するユーザーの関心</span>
+                    <span class="muted" style="font-size:12px;">${count} ログ</span>
+                </div>
+            `).join("") || "<p class='muted'>十分なデータが蓄積されていません</p>";
+
+            // 4. 最新ログ（逆時系列）
+            document.querySelector("#rawLogs").innerHTML = rawLogs.sort((a, b) => b.timestamp - a.timestamp).map(log => `
+                <div class="log-item">
+                    <strong>${log.selectedCoupon}</strong> を獲得<br>
+                    <span class="muted">属性: ${log.userProfile.gender || '未設定'} / ${log.userProfile.age || '不明'}歳 / ${log.receiptContext.store || '店舗不明'}経由</span>
+                </div>
+            `).join("") || "<p class='muted'>ログはありません</p>";
+        }
+
+        // 実行
+        analyze();
+        setInterval(analyze, 3000);
+    </script>
+</body>
+
+</html>

@@ -28,29 +28,46 @@
 
   <script src="../app.js"></script>
   <script>
+    // 1. まずログインしているかチェック（未ログインなら index.html へ飛ばす）
     requireLoginFromPages();
 
-    const me = getUserId();
-    qs("#who").textContent = `ログイン中: ${me}`;
+    // 2. ログインが確認できたら、やり直し権利をリセットする
+    try {
+      saveMyData(d => {
+        d.isRetryActive = false;
+        d.retries = 0;
+        return d;
+      });
+    } catch (e) {
+      console.error("初期化エラー:", e.message);
+    }
 
-    function renderOwned(){
+    // 3. ユーザー情報の表示
+    const me = getUserId();
+    if (me) {
+      qs("#who").textContent = `ログイン中: ${me}`;
+    }
+
+    function renderOwned() {
       const data = loadMyData();
+      if (!data) return; // データがない場合は中断
+
       const list = data.couponsOwned ?? [];
-      if(list.length === 0){
+      if (list.length === 0) {
         qs("#owned").innerHTML = `<p class="muted">まだクーポンがありません。候補画面から選択してください。</p>`;
         return;
       }
       qs("#owned").innerHTML = `
-        <div class="row">
-          ${list.slice(0, 5).map(c => `
-            <div class="coupon">
-              <div><strong>${c.title}</strong></div>
-              <div class="muted">割引: ${c.off} 円</div>
-              <div class="badges">${(c.tags||[]).map(t => `<span class="badge">${t}</span>`).join("")}</div>
-            </div>
-          `).join("")}
-        </div>
-      `;
+          <div class="row">
+            ${list.slice(0, 5).map(c => `
+              <div class="coupon">
+                <div><strong>${c.title}</strong></div>
+                <div class="muted">割引: ${c.off} 円</div>
+                <div class="badges">${(c.tags || []).map(t => `<span class="badge">${t}</span>`).join("")}</div>
+              </div>
+            `).join("")}
+          </div>
+        `;
     }
 
     renderOwned();

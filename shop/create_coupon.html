@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Shop - Management</title>
+    <link rel="stylesheet" href="../customer/style.css" />
+    <style>
+        .coupon-admin-card {
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stock-indicator {
+            font-size: 14px;
+            font-weight: bold;
+            color: #007aff;
+            margin-top: 8px;
+        }
+
+        .low-stock {
+            color: #ff3b30;
+        }
+
+        .editing {
+            border: 2px solid #007aff;
+            background: #f0f7ff;
+        }
+
+        .age-range-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .age-range-group input {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>【店舗用】クーポン管理パネル</h1>
+    <p class="muted">ターゲット年齢層をレンジで設定し、より精度の高いAIマッチングを行います。</p>
+
+    <div class="card row" id="inputForm">
+        <h2 id="formTitle" style="margin-top:0;">新規クーポン作成</h2>
+        <input type="hidden" id="editId">
+
+        <label>クーポンタイトル</label>
+        <input id="title" placeholder="例: 【大学生限定】ランチドリンク無料">
+
+        <label>割引額 または 相当額 (円)</label>
+        <input id="off" type="number" placeholder="例: 200">
+
+        <label>ターゲット性別</label>
+        <select id="targetGender">
+            <option value="all">全員</option>
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+        </select>
+
+        <label>ターゲット年齢層（最小 〜 最大）</label>
+        <div class="age-range-group">
+            <input id="targetAgeMin" type="number" placeholder="最小 (0)">
+            <span>〜</span>
+            <input id="targetAgeMax" type="number" placeholder="最大 (99)">
+        </div>
+
+        <label>関連タグ（カンマ区切り）</label>
+        <input id="tags" placeholder="例: バル,カフェ,学生">
+
+        <label id="stockLabel">発行枚数（在庫上限）</label>
+        <input id="totalStock" type="number" placeholder="例: 50">
+
+        <div class="toolbar">
+            <button class="primary" id="publishBtn">クーポンを公開・更新</button>
+            <button class="secondary" id="cancelBtn" style="display:none;">キャンセル</button>
+            <button class="secondary" id="clearBtn" style="color:#ff3b30;">全リセット</button>
+        </div>
+    </div>
+
+    <hr />
+
+    <h2>現在公開中のクーポン・発行状況</h2>
+    <div id="poolList"></div>
+
+    <div class="toolbar" style="margin-top:20px;">
+        <a href="index.html" class="btn secondary">ダッシュボードへ戻る</a>
+    </div>
+
+    <script>
+        const KEY_SHARED_POOL = "hk_shared_coupon_pool_v1";
+
+        function loadPool() { return JSON.parse(localStorage.getItem(KEY_SHARED_POOL)) || []; }
+
+        function renderPool() {
+            const pool = loadPool();
+            const listEl = document.querySelector("#poolList");
+            const editId = document.querySelector("#editId").value;
+
+            if (pool.length === 0) {
+                listEl.innerHTML = "<p class='muted'>公開中のクーポンはありません。</p>";
+                return;
+            }
+
+            listEl.innerHTML = pool.map(c => {
+                const isEditing = c.id === editId;
+                const outOfStock = c.remainingStock <= 0;
+                return `
+                <div class="coupon-admin-card ${isEditing ? 'editing' : ''}">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>${c.title}</strong>
+                        <span class="muted" style="font-size:12px;">${new Date(c.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div class="muted" style="font-size:13px;">
+                        価値: ${c.off}円 | 
+                        対象: ${c.target.age_min}〜${c.target.age_max}歳 (${c.target.gender})
+                    </div>
+                    <div class="stock-indicator ${outOfStock ? 'low-stock' : ''}">
+                        残り ${c.remainingStock} / ${c.initialStock} 枚
+                    </div>
+                    <div class="toolbar" style="margin-top:10px; gap:8px;">
+                        <button class="btn primary" style="font-size:12px; padding:4px 8px;" onclick="startEdit('${c.id}')">編集</button>
+                        <button class="btn secondary" style="font-size:12px; padding:4px 8px; color:#ff3b30;" onclick="deleteCoupon('${c.id}')">削除</button>
+                    </div>
+                </div>
+                `;
+            }).join("");
+        }
+
+        window.startEdit = function (id) {
+            const coupon = loadPool().find(c => c.id === id);
+            if (!coupon) return;
+
+            document.querySelector("#formTitle").textContent = "クーポンの編集";
+            document.querySelector("#editId").value = coupon.id;
+            document.querySelector("#title").value = coupon.title;
+            document.querySelector("#off").value = coupon.off;
+            document.querySelector("#targetGender").value = coupon.target.gender;
+            document.querySelector("#targetAgeMin").value = coupon.target.age_min;
+            document.querySelector("#targetAgeMax").value = coupon.target.age_max;
+            document.querySelector("#tags").value = coupon.tags.join(",");
+            document.querySelector("#totalStock").value = coupon.initialStock;
+
+            document.querySelector("#cancelBtn").style.display = "inline-block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderPool();
+        };
+
+        function resetForm() {
+            document.querySelector("#formTitle").textContent = "新規クーポン作成";
+            document.querySelector("#editId").value = "";
+            document.querySelector("#title").value = "";
+            document.querySelector("#off").value = "";
+            document.querySelector("#targetAgeMin").value = "";
+            document.querySelector("#targetAgeMax").value = "";
+            document.querySelector("#totalStock").value = "";
+            document.querySelector("#tags").value = "";
+            document.querySelector("#cancelBtn").style.display = "none";
+        }
+
+        document.querySelector("#publishBtn").addEventListener("click", () => {
+            const editId = document.querySelector("#editId").value;
+            const title = document.querySelector("#title").value.trim();
+            const off = Number(document.querySelector("#off").value);
+            const gender = document.querySelector("#targetGender").value;
+            const ageMin = Number(document.querySelector("#targetAgeMin").value || 0);
+            const ageMax = Number(document.querySelector("#targetAgeMax").value || 99);
+            const tags = document.querySelector("#tags").value.split(",").map(s => s.trim()).filter(s => s !== "");
+            const newTotalStock = Number(document.querySelector("#totalStock").value);
+
+            if (!title || !off || !newTotalStock) { alert("必須項目を入力してください"); return; }
+
+            let pool = loadPool();
+            const couponData = {
+                title, off, tags,
+                target: { gender, age_min: ageMin, age_max: ageMax },
+                initialStock: newTotalStock
+            };
+
+            if (editId) {
+                pool = pool.map(c => {
+                    if (c.id === editId) {
+                        const stockDiff = newTotalStock - c.initialStock;
+                        return { ...c, ...couponData, remainingStock: c.remainingStock + (stockDiff > 0 ? stockDiff : 0) };
+                    }
+                    return c;
+                });
+            } else {
+                pool.push({ ...couponData, id: crypto.randomUUID(), remainingStock: newTotalStock, createdAt: Date.now() });
+            }
+
+            localStorage.setItem(KEY_SHARED_POOL, JSON.stringify(pool));
+            resetForm();
+            renderPool();
+            alert("保存しました。");
+        });
+
+        window.deleteCoupon = function (id) {
+            if (!confirm("削除しますか？")) return;
+            localStorage.setItem(KEY_SHARED_POOL, JSON.stringify(loadPool().filter(c => c.id !== id)));
+            renderPool();
+        };
+
+        document.querySelector("#cancelBtn").addEventListener("click", resetForm);
+        document.querySelector("#clearBtn").addEventListener("click", () => {
+            if (confirm("全データを消去しますか？")) { localStorage.removeItem(KEY_SHARED_POOL); renderPool(); }
+        });
+
+        setInterval(renderPool, 5000);
+        renderPool();
+    </script>
+</body>
+
+</html>
