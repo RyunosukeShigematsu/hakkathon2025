@@ -9,17 +9,20 @@
 </head>
 
 <body>
-  <h1>新規登録（デモ）</h1>
+  <h1>新規登録</h1>
 
   <div class="card row">
-    <label>ユーザーID（ログインに使用します）</label>
-    <input id="userId" placeholder="例: user001">
+    <label>ログインID（名前でOK・他の人と重複しないもの）</label>
+    <input id="userId" placeholder="例: 中野蓮賀" autocomplete="username">
+
+    <label>パスワード</label>
+    <input id="password" type="password" placeholder="4文字以上" autocomplete="new-password">
 
     <label>名前</label>
-    <input id="name" placeholder="例: 山田太郎">
+    <input id="name" placeholder="例: 山田太郎" autocomplete="name">
 
     <label>年齢</label>
-    <input id="age" type="number" placeholder="例: 20">
+    <input id="age" type="number" placeholder="例: 20" min="0" max="120">
 
     <label>性別</label>
     <select id="gender">
@@ -44,45 +47,82 @@
     <input id="memo" placeholder="例: 中野によく来ます">
 
     <div class="toolbar">
-      <button class="primary" id="saveBtn">登録してログイン画面へ</button>
+      <button class="primary" id="saveBtn">登録する</button>
       <a class="btn secondary" href="../index.html">戻る</a>
     </div>
 
-    <p class="muted">※登録したIDをログイン画面で入力してください。</p>
+    <p class="muted" id="msg"></p>
   </div>
 
   <script src="../app.js"></script>
   <script>
-    on("#saveBtn", "click", () => {
+    // ★登録API（PHP）に送る
+    const API_REGISTER = "https://shigematsu.nkmr.io/hakkathon2025/server/api/user_register.php";
+
+    function getCheckedPrefs() {
+      return [...qsa('input[name="pref"]:checked')].map(el => el.value);
+    }
+
+    function setMsg(text) {
+      qs("#msg").textContent = text || "";
+    }
+
+    on("#saveBtn", "click", async () => {
+      setMsg("");
+
       const userId = qs("#userId").value.trim();
+      const password = qs("#password").value;
       const name = qs("#name").value.trim();
-      const age = Number(qs("#age").value);
+      const ageRaw = qs("#age").value;
+      const age = ageRaw === "" ? null : Number(ageRaw);
       const gender = qs("#gender").value;
       const memo = qs("#memo").value.trim();
+      const preferences = getCheckedPrefs();
 
       if (!userId) { alert("ユーザーIDを入力してください"); return; }
+      if (!password || password.length < 4) { alert("パスワードは4文字以上にしてください"); return; }
+      if (age !== null && (Number.isNaN(age) || age < 0 || age > 120)) { alert("年齢の値が不正です"); return; }
 
-      // チェックボックスの値を配列で取得
-      const preferences = [...qsa('input[name="pref"]:checked')].map(el => el.value);
+      // 二重送信防止
+      const btn = qs("#saveBtn");
+      btn.disabled = true;
+      btn.style.opacity = 0.6;
+      setMsg("登録中…");
 
-      // 全ユーザーデータを読み込み、新しいユーザーを追加
-      const all = loadAllUserData();
+      try {
+        const res = await fetch(API_REGISTER, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: userId,
+            password,
+            name,
+            age,
+            gender,
+            preferences,
+            memo
+          })
+        });
 
-      // app.js の初期構造（DEFAULT_USER_DATA）に基づいた保存
-      all[userId] = {
-        profile: { name, age, gender, preferences, memo },
-        receipt: { store: "", total: 0, visitTime: "", imageDataUrl: null },
-        candidates: [],
-        couponsOwned: [],
-        logs: [],
-        retries: 0,
-        isRetryActive: false
-      };
+        const json = await res.json().catch(() => null);
 
-      saveJSON(KEY_USERDATA, all);
+        if (!res.ok) {
+          const message = (json && json.message) ? json.message : "登録に失敗しました";
+          alert(message);
+          setMsg(message);
+          return;
+        }
 
-      alert(`登録が完了しました！\nID: ${userId} でログインしてください。`);
-      location.href = "../index.html";
+        // 登録成功 → そのままログイン画面へ
+        location.href = "../index.html";
+      } catch (e) {
+        console.error(e);
+        alert("通信に失敗しました（サーバに到達できません）");
+        setMsg("通信に失敗しました");
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = 1;
+      }
     });
   </script>
 </body>

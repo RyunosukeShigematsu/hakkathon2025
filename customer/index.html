@@ -7,30 +7,69 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>ログイン（デモ）</h1>
+  <h1>ログイン</h1>
 
   <div class="card row">
-    <label>ユーザーID（適当にOK）</label>
-    <input id="userId" placeholder="例: user001" />
+    <label>ログインID</label>
+    <input id="userId" autocomplete="username" />
+
+    <label>パスワード</label>
+    <input id="password" type="password" autocomplete="current-password" />
 
     <div class="toolbar">
       <button class="primary" id="loginBtn">ログイン</button>
       <a class="btn secondary" href="pages/register.html">新規登録</a>
     </div>
 
-    <p class="muted">※DBは後で。今は入力したIDでログイン扱いになります。</p>
+    <p class="muted" id="msg"></p>
   </div>
 
   <script src="app.js"></script>
   <script>
-    // 既にログイン済みならhomeへ
+    const API_LOGIN = "https://shigematsu.nkmr.io/hakkathon2025/server/api/user_login.php";
+
     if (getUserId()) location.href = "pages/home.html";
 
-    on("#loginBtn", "click", () => {
-      const userId = qs("#userId").value.trim();
-      if (!userId) { alert("IDを入力してください"); return; }
-      loginDemo(userId);
-      location.href = "pages/home.html";
+    function setMsg(text) {
+      const el = document.getElementById("msg");
+      if (el) el.textContent = text || "";
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+
+      const userId = document.getElementById("userId").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!userId || !password) {
+        setMsg("ログインIDとパスワードを入力してください");
+        return;
+      }
+
+      try {
+        const res = await fetch(API_LOGIN, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, password })
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          setMsg(json.message || "ログイン失敗");
+          return;
+        }
+
+        // セッション保存（app.jsの形式に合わせる）
+        localStorage.setItem(KEY_SESSION, JSON.stringify({
+          userId: json.user_id,
+          at: Date.now()
+        }));
+
+        location.href = "pages/home.html";
+
+      } catch (e) {
+        setMsg("通信に失敗しました");
+      }
     });
   </script>
 </body>

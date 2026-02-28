@@ -37,8 +37,7 @@ function getUserId() {
 }
 function requireLoginFromPages() {
   if (!getUserId()) {
-    alert("ログインしてください（デモ）");
-    location.href = "../index.html";
+    location.replace("../index.html");
   }
 }
 

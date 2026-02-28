@@ -1,19 +1,20 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Coupons (3 candidates)</title>
+  <title>Coupons</title>
   <link rel="stylesheet" href="../style.css" />
 </head>
+
 <body>
-  <h1>クーポン候補（3つ）</h1>
+  <h1>クーポン候補</h1>
   <p class="muted">3つの中から1つ選んでください。やり直しもできます。</p>
 
   <div class="toolbar">
     <button class="primary" id="regenBtn">候補をやり直す</button>
     <span id="retryCount" style="margin-left:10px; font-weight:bold; font-size:14px;"></span>
-    <a class="btn secondary" href="home.html">ホームへ戻る</a>
   </div>
 
   <div style="height:12px;"></div>
@@ -23,109 +24,190 @@
   <script>
     requireLoginFromPages();
 
-    // coupons.html のスクリプト内
+    // =========================================
+    // 将来：ここを「shop側で作ったクーポン一覧（DB/API）」に差し替えるだけ
+    // 1クーポン = 1つの塊（店・商品・割引・画像…）
+    // =========================================
+    const COUPON_CATALOG = [
+      {
+        id: "coupon_001",
+        shopId: "shop_01",
+        shopName: "仮店舗A",
+        productId: "p_01",
+        menuName: "割引対象メニューA",
+        discountPercent: 10,
+        imageUrl: null, // 例: "../images/coupon_a.png"
+      },
+      {
+        id: "coupon_002",
+        shopId: "shop_02",
+        shopName: "仮店舗B",
+        productId: "p_02",
+        menuName: "割引対象メニューB",
+        discountPercent: 20,
+        imageUrl: null,
+      },
+      {
+        id: "coupon_003",
+        shopId: "shop_03",
+        shopName: "仮店舗C",
+        productId: "p_03",
+        menuName: "割引対象メニューC",
+        discountPercent: 30,
+        imageUrl: null,
+      }
+    ];
 
-      // 1. 最新データの読み込み
-      let data = loadMyData();
+    // 配置をランダムにするだけ（クーポンの中身は塊のまま）
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
-      // 2. もし候補が空、かつレシート保存直後（isRetryActiveがtrue）なら初回生成を行う
-      if ((!data.candidates || data.candidates.length === 0) && data.isRetryActive) {
-        try {
-          // isRetry=false として初回生成（レシート情報が反映されたスコアリングが行われる）
-          data.candidates = generateCandidates(false);
-        } catch (e) {
-          console.error("生成エラー:", e);
-        }
+    function consumeOneRetryOrThrow() {
+      const d = loadMyData();
+
+      if (!d?.isRetryActive) {
+        throw new Error("やり直しは利用できません");
+      }
+      if ((d.retries ?? 0) <= 0) {
+        throw new Error("やり直し回数が残っていません");
       }
 
-      // 3. 表示反映
-      render(data.candidates);
-      updateRetryDisplay();
+      // 1回消費
+      saveMyData(x => {
+        x.retries = (x.retries ?? 0) - 1;
+        // 0になったら終了扱いにしてボタンを無効化
+        if (x.retries <= 0) {
+          x.retries = 0;
+          x.isRetryActive = false;
+        }
+        return x;
+      });
+    }
 
-    // 回数表示とボタンの状態を更新する関数
+    // 常に3枚欲しいので、足りなければダミーを追加（将来はcatalogが十分ある前提でもOK）
+    function ensureThree(list) {
+      const out = [...list];
+      let n = 1;
+      while (out.length < 3) {
+        out.push({
+          id: `dummy_${n++}`,
+          shopId: null,
+          shopName: `仮店舗${out.length + 1}`,
+          productId: null,
+          menuName: `割引対象メニュー${out.length + 1}`,
+          discountPercent: 10 * (out.length + 1),
+          imageUrl: null,
+          isDummy: true
+        });
+      }
+      return out.slice(0, 3);
+    }
+
+    // 候補生成（今は catalog からランダム配置するだけ）
+    function buildCandidates() {
+      const shuffled = shuffle(COUPON_CATALOG);
+      return ensureThree(shuffled).slice(0, 3);
+    }
+
     function updateRetryDisplay() {
-      const data = loadMyData();
+      const d = loadMyData();
       const retryEl = qs("#retryCount");
-      
-      // データがない場合や権利がない場合をガード
-      if (!data || !data.isRetryActive || data.retries <= 0) {
+
+      if (!d || !d.isRetryActive || (d.retries ?? 0) <= 0) {
         retryEl.textContent = "（やり直しは利用できません）";
         qs("#regenBtn").disabled = true;
         qs("#regenBtn").style.opacity = 0.5;
       } else {
-        retryEl.textContent = `（残りやり直し回数: ${data.retries}回）`;
+        retryEl.textContent = `（残りやり直し回数: ${d.retries}回）`;
         qs("#regenBtn").disabled = false;
         qs("#regenBtn").style.opacity = 1;
       }
     }
 
     function render(candidates) {
-        if (!candidates || candidates.length === 0) {
-          qs("#grid").innerHTML = `<p class="muted">まだ候補がありません。「候補を生成」を押してください。</p>`;
-          return;
-        }
-
-        // 最新の在庫状況を反映させるために共有プールを取得
-        const sharedPool = JSON.parse(localStorage.getItem("hk_shared_coupon_pool_v1")) || [];
-
-        qs("#grid").innerHTML = candidates.map(c => {
-          // 共有プールから最新の在庫数を探す
-          const liveData = sharedPool.find(p => p.title === c.title);
-          const stock = liveData ? liveData.remainingStock : 0;
-          const isLow = stock > 0 && stock <= 5; // 残り5枚以下なら警告
-
-          return `
+      qs("#grid").innerHTML = candidates.map(c => `
         <div class="coupon">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <strong>${c.title}</strong>
-            ${isLow ? '<span class="badge" style="background:#ff3b30; color:white;">残りわずか！</span>' : ''}
-          </div>
-          <div class="muted">割引: ${c.off} 円</div>
-          
-          <div style="font-size: 12px; margin: 8px 0; color: ${stock === 0 ? '#ff3b30' : '#666'};">
-            現在の発行残数: <strong>${stock}</strong> 枚
+          <strong>${c.shopName}</strong>
+
+          <div style="margin:12px 0; border:1px solid #eee; border-radius:12px; height:120px; display:flex; align-items:center; justify-content:center; background:#fafafa; color:#999;">
+            ${c.imageUrl ? `<img src="${c.imageUrl}" style="max-width:100%; max-height:100%; border-radius:12px;">` : `No Image`}
           </div>
 
-          <div class="badges">${(c.tags || []).map(t => `<span class="badge">${t}</span>`).join("")}</div>
-          
+          <div class="muted">対象メニュー: <strong>${c.menuName}</strong></div>
+          <div style="font-size:18px; font-weight:bold; margin:8px 0;">
+            ${c.discountPercent}% OFF
+          </div>
+
           <div class="toolbar">
-            <button data-id="${c.id}" class="primary selectBtn" ${stock <= 0 ? 'disabled' : ''}>
-              ${stock <= 0 ? '予定枚数終了' : 'これにする'}
+            <button data-id="${c.id}" class="primary selectBtn">
+              これにする
             </button>
           </div>
         </div>
-      `}).join("");
+      `).join("");
 
-        qsa(".selectBtn").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            try {
-              selectCandidate(id);
-              alert("選択しました！ホームで確認できます。");
-              location.href = "home.html";
-            } catch (e) {
-              alert(e.message ?? "失敗しました");
-            }
+      qsa(".selectBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          const picked = candidates.find(c => c.id === id);
+          if (!picked) return;
+
+          // ★選択したクーポンを「塊のまま」保存
+          saveMyData(d => {
+            d.couponsOwned = d.couponsOwned ?? [];
+            d.couponsOwned.unshift({
+              id: picked.id,
+              shopId: picked.shopId,
+              shopName: picked.shopName,
+              productId: picked.productId,
+              menuName: picked.menuName,
+              discountPercent: picked.discountPercent,
+              imageUrl: picked.imageUrl,
+              acquiredAt: Date.now()
+            });
+
+            d.candidates = [];
+            d.isRetryActive = false;
+            d.retries = 0;
+            return d;
           });
+
+          location.href = "home.html";
         });
-      }
+      });
+    }
 
-    // --- 初期表示処理 ---
-    const currentData = loadMyData();
-    render(currentData.candidates);
-    updateRetryDisplay(); // 画面を開いた瞬間に回数をチェック
+    function init() {
+      const candidates = buildCandidates();
 
-    // --- イベントリスナー ---
+      // 画面表示に使っている候補を保存（他ページとの整合）
+      saveMyData(d => { d.candidates = candidates; return d; });
+
+      render(candidates);
+      updateRetryDisplay();
+    }
+
     on("#regenBtn", "click", () => {
       try {
-        // ★引数 true を渡して「やり直し」として実行
-        const candidates = generateCandidates(true); 
+        consumeOneRetryOrThrow();      // ★ここで回数を減らす
+        const candidates = buildCandidates();
+        saveMyData(d => { d.candidates = candidates; return d; });
         render(candidates);
-        updateRetryDisplay(); // 実行後に回数を更新
+        updateRetryDisplay();          // ★減った回数を反映
       } catch (e) {
-        alert(e.message ?? "やり直しに失敗しました");
+        alert(e?.message ?? "やり直しに失敗しました");
+        updateRetryDisplay();
       }
     });
+
+    init();
   </script>
 </body>
+
 </html>

@@ -6,14 +6,14 @@
   <title>Home</title>
   <link rel="stylesheet" href="../style.css" />
 </head>
+
 <body>
   <h1>ホーム</h1>
   <p id="who" class="muted"></p>
 
   <div class="card">
     <div class="toolbar">
-      <a class="btn primary" href="receipt.html">レシート読み込み</a>
-      <a class="btn primary" href="coupons.html">クーポン候補（3つ）</a>
+      <a class="btn primary" href="receipt.html">レシート登録</a>
     </div>
 
     <hr />
@@ -26,12 +26,38 @@
     <button class="secondary" id="logoutBtn">ログアウト</button>
   </div>
 
+  <!-- ===== オーバーレイ（使用確認→コード表示） ===== -->
+  <div id="overlay" style="position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; padding:16px; z-index:9999;">
+    <div style="background:white; border-radius:16px; width:min(420px, 100%); padding:16px;">
+      <div id="ovTitle" style="font-weight:800; font-size:16px;"></div>
+      <div id="ovDesc" class="muted" style="margin-top:6px;"></div>
+
+      <!-- 確認ステージ -->
+      <div id="ovStageConfirm" style="margin-top:14px;">
+        <p class="muted" style="margin:0;">このクーポンを使用しますか？</p>
+        <div class="toolbar" style="margin-top:12px;">
+          <button class="primary" id="ovUseBtn">使用する</button>
+          <button class="secondary" id="ovCancelBtn">キャンセル</button>
+        </div>
+      </div>
+
+      <!-- コード表示ステージ -->
+      <div id="ovStageCode" style="display:none; margin-top:14px;">
+        <div class="muted">店員さんにこのコードを見せてください</div>
+        <div id="ovCode" style="font-size:34px; font-weight:900; letter-spacing:2px; margin-top:8px;"></div>
+        <div class="muted" style="margin-top:6px;">残り <span id="ovSec">3:00</span></div>
+        <div class="toolbar" style="margin-top:12px;">
+          <button class="secondary" id="ovCloseBtn">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="../app.js"></script>
   <script>
-    // 1. まずログインしているかチェック（未ログインなら index.html へ飛ばす）
     requireLoginFromPages();
 
-    // 2. ログインが確認できたら、やり直し権利をリセットする
+    // ログイン後、やり直し権利をリセット（現仕様のまま）
     try {
       saveMyData(d => {
         d.isRetryActive = false;
@@ -42,32 +68,224 @@
       console.error("初期化エラー:", e.message);
     }
 
-    // 3. ユーザー情報の表示
     const me = getUserId();
-    if (me) {
-      qs("#who").textContent = `ログイン中: ${me}`;
+    if (me) qs("#who").textContent = `ログイン中: ${me}`;
+
+    // ===== クーポン正規化 =====
+    function normalizeOwnedCoupon(c, idx) {
+      if (c.shopName || c.menuName || typeof c.discountPercent === "number") {
+        return {
+          shopName: c.shopName ?? `仮店舗${idx + 1}`,
+          menuName: c.menuName ?? "割引対象メニュー（仮）",
+          discountPercent: typeof c.discountPercent === "number" ? c.discountPercent : 0
+        };
+      }
+      if (c.title || typeof c.off === "number") {
+        return {
+          shopName: c.title ?? `仮店舗${idx + 1}`,
+          menuName: "割引対象メニュー（仮）",
+          discountPercent: 0
+        };
+      }
+      return null;
     }
 
-    function renderOwned() {
-      const data = loadMyData();
-      if (!data) return; // データがない場合は中断
+    // ===== オーバーレイ管理 =====
+    let currentUseIndex = null;
+    let timerId = null;
+    let codeWasShown = false; // コードを表示したら true
+    let currentShownCode = ""; // 表示したコードを保持（閉じる時にも使う）
 
-      const list = data.couponsOwned ?? [];
-      if (list.length === 0) {
-        qs("#owned").innerHTML = `<p class="muted">まだクーポンがありません。候補画面から選択してください。</p>`;
+    function openOverlay(index, coupon) {
+      currentUseIndex = index;
+      codeWasShown = false;
+      currentShownCode = "";
+
+      qs("#ovTitle").textContent = coupon.shopName;
+      qs("#ovDesc").textContent = `対象メニュー: ${coupon.menuName} / ${coupon.discountPercent}% OFF`;
+
+      qs("#ovStageConfirm").style.display = "block";
+      qs("#ovStageCode").style.display = "none";
+
+      qs("#overlay").style.display = "flex";
+    }
+
+    function clearTimer() {
+      if (timerId) clearInterval(timerId);
+      timerId = null;
+    }
+
+    function closeOverlayOnly() {
+      clearTimer();
+      currentUseIndex = null;
+      codeWasShown = false;
+      currentShownCode = "";
+      qs("#overlay").style.display = "none";
+    }
+
+    // ===== 店舗ごとの英字2桁プレフィックス（必要なら増やす）=====
+    // ここに店舗名→英字2桁を割り当てておくと今後楽
+    const SHOP_PREFIX = {
+      "仮店舗A": "KA",
+      "仮店舗B": "KB",
+      "仮店舗C": "KC",
+      "仮店舗1": "KF",
+      "仮店舗2": "KG",
+      "仮店舗3": "KH"
+    };
+
+    function getShopPrefix2(shopName) {
+      // 未登録の場合はランダム英字2桁
+      const v = SHOP_PREFIX[shopName];
+      if (typeof v === "string" && /^[A-Z]{2}$/.test(v)) return v;
+      return randomLetters2();
+    }
+
+    function randomLetters2() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return chars[Math.floor(Math.random() * chars.length)] +
+             chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    function randomDigits2() {
+      return String(Math.floor(Math.random() * 100)).padStart(2, "0");
+    }
+
+    // 必ず「英字2桁（店プレフィックス優先）＋数字2桁」 = KF23 形式
+    function generateUseCode(coupon) {
+      return `${getShopPrefix2(coupon.shopName)}${randomDigits2()}`;
+    }
+
+    function formatMMSS(totalSec) {
+      const m = Math.floor(totalSec / 60);
+      const s = String(totalSec % 60).padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function consumeCouponNow(index, code, reason) {
+      saveMyData(d => {
+        const owned = d.couponsOwned ?? [];
+        const coupon = owned[index];
+        if (!coupon) return d;
+
+        d.couponUseLogs = d.couponUseLogs ?? [];
+        d.couponUseLogs.unshift({
+          code,
+          shopName: coupon.shopName ?? coupon.title ?? "",
+          menuName: coupon.menuName ?? "",
+          discountPercent: coupon.discountPercent ?? 0,
+          issuedAt: Date.now(),
+          endedAt: Date.now(),
+          reason
+        });
+
+        // 所持クーポンから削除（=消失）
+        d.couponsOwned = owned.filter((_, i) => i !== index);
+        return d;
+      });
+
+      renderOwned();
+    }
+
+    function startCountdown3min(code) {
+      qs("#ovStageConfirm").style.display = "none";
+      qs("#ovStageCode").style.display = "block";
+      qs("#ovCode").textContent = code;
+
+      codeWasShown = true;
+      currentShownCode = code;
+
+      let sec = 180; // 3:00
+      qs("#ovSec").textContent = formatMMSS(sec);
+
+      clearTimer();
+      timerId = setInterval(() => {
+        sec--;
+        qs("#ovSec").textContent = formatMMSS(sec);
+        if (sec <= 0) {
+          clearTimer();
+          const idx = currentUseIndex;
+          closeOverlayOnly();
+          if (idx != null) consumeCouponNow(idx, code, "expired");
+        }
+      }, 1000);
+    }
+
+    // キャンセル：コード表示前なら何もしないで閉じる
+    on("#ovCancelBtn", "click", () => {
+      closeOverlayOnly();
+    });
+
+    // 閉じる：コード表示後なら、その時点でクーポン消失
+    on("#ovCloseBtn", "click", () => {
+      const idx = currentUseIndex;
+      const shown = codeWasShown;
+      const code = currentShownCode || qs("#ovCode").textContent || "";
+
+      closeOverlayOnly();
+
+      if (shown && idx != null) {
+        consumeCouponNow(idx, code, "closed");
+      }
+    });
+
+    // 使用する：コード発行→表示→3分カウントダウン
+    on("#ovUseBtn", "click", () => {
+      const data = loadMyData();
+      const owned = data.couponsOwned ?? [];
+      const coupon = owned[currentUseIndex];
+
+      if (!coupon) {
+        alert("クーポンが見つかりません");
+        closeOverlayOnly();
         return;
       }
+
+      const code = generateUseCode(coupon);
+      startCountdown3min(code);
+    });
+
+    // ===== 所持クーポン描画（ボタン追加）=====
+    function renderOwned() {
+      const data = loadMyData();
+      if (!data) return;
+
+      const raw = data.couponsOwned ?? [];
+      const normalized = raw.map((c, idx) => normalizeOwnedCoupon(c, idx)).filter(Boolean);
+      const cleaned = normalized.filter(c => (c.discountPercent ?? 0) > 0);
+
+      saveMyData(d => { d.couponsOwned = cleaned; return d; });
+
+      if (cleaned.length === 0) {
+        qs("#owned").innerHTML = `<p class="muted">まだクーポンがありません。レシート登録→クーポン選択を行ってください。</p>`;
+        return;
+      }
+
       qs("#owned").innerHTML = `
-          <div class="row">
-            ${list.slice(0, 5).map(c => `
-              <div class="coupon">
-                <div><strong>${c.title}</strong></div>
-                <div class="muted">割引: ${c.off} 円</div>
-                <div class="badges">${(c.tags || []).map(t => `<span class="badge">${t}</span>`).join("")}</div>
+        <div class="row">
+          ${cleaned.slice(0, 5).map((c, idx) => `
+            <div class="coupon">
+              <div><strong>${c.shopName}</strong></div>
+              <div class="muted">対象メニュー: ${c.menuName}</div>
+              <div style="font-weight:bold; margin-top:6px;">${c.discountPercent}% OFF</div>
+
+              <div class="toolbar" style="margin-top:10px;">
+                <button class="primary useBtn" data-index="${idx}">このクーポンを使う</button>
               </div>
-            `).join("")}
-          </div>
-        `;
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      qsa(".useBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.dataset.index);
+          const d = loadMyData();
+          const coupon = (d.couponsOwned ?? [])[idx];
+          if (!coupon) return;
+          openOverlay(idx, coupon);
+        });
+      });
     }
 
     renderOwned();
