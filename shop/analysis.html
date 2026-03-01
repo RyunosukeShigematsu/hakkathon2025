@@ -6,14 +6,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Shop - 分析</title>
 
+  <!-- 店舗側の既存デザインに合わせる -->
   <link rel="stylesheet" href="../customer/style.css" />
 
   <style>
-    .analysis-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
+    .analysis-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 
     .top-bar {
       display: flex;
@@ -23,18 +20,9 @@
       gap: 12px;
     }
 
-    .shop-id {
-      font-size: 13px;
-      color: #666;
-      margin-top: 6px;
-    }
+    .shop-id { font-size: 13px; color: #666; margin-top: 6px; }
+    .muted { color: #666; font-size: 13px; }
 
-    .muted {
-      color: #666;
-      font-size: 13px;
-    }
-
-    /* ---- list ---- */
     .target-item {
       display: flex;
       justify-content: space-between;
@@ -46,53 +34,32 @@
       cursor: pointer;
       user-select: none;
     }
+    .target-item:active { transform: scale(0.995); opacity: 0.9; }
 
-    .target-item:active {
-      transform: scale(0.995);
-      opacity: 0.9;
-    }
-
-    .target-left {
-      text-align: left;
-      flex: 1;
-      min-width: 0;
-    }
-
+    .target-left { text-align: left; flex: 1; min-width: 0; }
     .target-title {
-      font-weight: 700;
-      font-size: 14px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-weight: 700; font-size: 14px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    .target-sub { margin-top: 3px; font-size: 12px; color: #777; }
 
-    .target-sub {
-      margin-top: 3px;
-      font-size: 12px;
-      color: #777;
-    }
-
-    /* ---- modal ---- */
+    /* modal */
     .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.35);
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35);
       display: none;
-      align-items: center;
-      justify-content: center;
+      align-items: center; justify-content: center;
       padding: 18px;
       z-index: 9999;
     }
-
     .modal {
       width: min(520px, 100%);
       background: #fff;
       border-radius: 16px;
       border: 1px solid #eee;
       padding: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
     }
-
     .modal-head {
       display: flex;
       justify-content: space-between;
@@ -100,19 +67,8 @@
       gap: 12px;
       margin-bottom: 10px;
     }
-
-    .modal-title {
-      font-size: 16px;
-      font-weight: 800;
-      margin: 0;
-      line-height: 1.3;
-    }
-
-    .modal-sub {
-      margin-top: 4px;
-      font-size: 12px;
-      color: #777;
-    }
+    .modal-title { font-size: 16px; font-weight: 800; margin: 0; line-height: 1.3; }
+    .modal-sub { margin-top: 4px; font-size: 12px; color: #777; }
 
     .icon-btn {
       border: 1px solid #eee;
@@ -121,35 +77,17 @@
       padding: 8px 10px;
       cursor: pointer;
     }
+    .icon-btn:active { transform: scale(0.98); }
 
-    .icon-btn:active {
-      transform: scale(0.98);
-    }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     .kpi {
       background: #f7f7f7;
       border: 1px solid #eee;
       border-radius: 12px;
       padding: 12px;
     }
-
-    .kpi .label {
-      font-size: 12px;
-      color: #666;
-    }
-
-    .kpi .value {
-      font-size: 22px;
-      font-weight: 800;
-      margin-top: 4px;
-    }
+    .kpi .label { font-size: 12px; color: #666; }
+    .kpi .value { font-size: 22px; font-weight: 800; margin-top: 4px; }
 
     .bar-wrap {
       background: #eee;
@@ -158,33 +96,9 @@
       overflow: hidden;
       margin-top: 10px;
     }
+    .bar { height: 100%; width: 0%; background: #007aff; transition: width .5s ease; }
 
-    .bar {
-      height: 100%;
-      width: 0%;
-      background: #007aff;
-      transition: width .5s ease;
-    }
-
-    .modal-foot {
-      display: flex;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .modal-foot .btn {
-      width: 100%;
-      text-align: center;
-    }
-
-    /* ---- tag chips ---- */
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-    }
-
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
     .chip {
       font-size: 12px;
       padding: 4px 10px;
@@ -193,11 +107,7 @@
       background: #fff;
       color: #333;
     }
-
-    .chip .c {
-      color: #666;
-      margin-left: 6px;
-    }
+    .chip .c { color: #666; margin-left: 6px; }
   </style>
 </head>
 
@@ -212,8 +122,8 @@
   </div>
 
   <p class="muted">
-    この店舗のクーポン候補（商品カテゴリ）を一覧表示します。
-    各項目をクリックすると、表示回数・選択回数・選択率と、選択した人の特徴を確認できます。
+    この店舗の「クーポン候補（商品カテゴリ）」一覧です。<br>
+    クリックすると、表示回数・選択回数・選択率と、選択した人の特徴を確認できます。
   </p>
 
   <div class="analysis-grid">
@@ -263,20 +173,17 @@
   <script>
     const KEY_SHOP_SESSION = "hk_shop_session_v1";
 
-    // ✅ 既に動いている：カテゴリ一覧
-    const API_TARGETS =
-      "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_targets_list.php";
+    // 既に動いているカテゴリ一覧API
+    const API_TARGETS = "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_targets_list.php";
 
-    // ✅ ここをあなたの集計APIにする（重要）
-    // あなたが貼ったPHPを、このファイル名で配置してね：
-    // /hakkathon2025/server/api/shop_get_analysis.php
-    const API_TARGET_STATS =
-      "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_get_analysis.php";
+    // ★今回の集計API（あなたのshop_get_analysis.php）
+    const API_TARGET_STATS = "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_get_analysis.php";
 
     function safeParse(raw, fallback) {
       try { return JSON.parse(raw); } catch (e) { return fallback; }
     }
 
+    // ログインチェック
     const session = safeParse(localStorage.getItem(KEY_SHOP_SESSION), null);
     if (!session || !session.shopId) location.href = "./index.html";
 
@@ -286,9 +193,7 @@
 
     const namePart = SHOP_NAME ? (" / " + SHOP_NAME) : "";
     const genrePart = GENRE ? ("（" + GENRE + "）") : "";
-
-    document.getElementById("shopDisplay").textContent =
-      "店舗ID: " + SHOP_ID + namePart + genrePart;
+    document.getElementById("shopDisplay").textContent = "店舗ID: " + SHOP_ID + namePart + genrePart;
 
     async function fetchTargets() {
       const res = await fetch(API_TARGETS, {
@@ -301,10 +206,9 @@
       let json;
       try { json = JSON.parse(text); }
       catch (e) {
-        console.log("targets raw response:", text);
+        console.log("targets raw:", text);
         return { ok: false, items: [] };
       }
-
       if (!json.ok || !Array.isArray(json.items)) return { ok: false, items: [] };
       return { ok: true, items: json.items };
     }
@@ -320,17 +224,20 @@
       let json;
       try { json = JSON.parse(text); }
       catch (e) {
-        console.log("stats raw response:", text);
+        console.log("stats raw:", text);
         throw new Error("集計APIの返答がJSONではありません");
       }
 
       if (!json.ok) {
-        throw new Error(json.message || "集計APIエラー");
+        // PHPが返したdetailも見えるようにする
+        const msg = json.message || "集計APIエラー";
+        const detail = json.detail ? (" / " + JSON.stringify(json.detail)) : "";
+        throw new Error(msg + detail);
       }
       return json;
     }
 
-    // ===== modal =====
+    // modal
     const modalBackdrop = document.getElementById("modalBackdrop");
     const modalCloseBtn = document.getElementById("modalCloseBtn");
 
@@ -344,9 +251,8 @@
       const ctrNum = Number(ctr || 0);
       document.getElementById("kpiCtr").textContent = (ctrNum * 100).toFixed(1) + "%";
 
-      const bar = document.getElementById("ctrBar");
       const pct = Math.max(0, Math.min(100, Math.round(ctrNum * 100)));
-      bar.style.width = pct + "%";
+      document.getElementById("ctrBar").style.width = pct + "%";
 
       modalBackdrop.style.display = "flex";
     }
@@ -373,22 +279,19 @@
         return;
       }
 
-      const genderText =
+      document.getElementById("attrGender").textContent =
         "性別: male " + (g.male || 0) +
         ", female " + (g.female || 0) +
         ", other " + (g.other || 0) +
         ", unknown " + (g.unknown || 0);
 
-      const ageText =
+      document.getElementById("attrAge").textContent =
         "年齢: -19 " + (a["-19"] || 0) +
         ", 20s " + (a["20s"] || 0) +
         ", 30s " + (a["30s"] || 0) +
         ", 40s " + (a["40s"] || 0) +
         ", 50+ " + (a["50+"] || 0) +
         ", unknown " + (a.unknown || 0);
-
-      document.getElementById("attrGender").textContent = genderText;
-      document.getElementById("attrAge").textContent = ageText;
 
       if (!Array.isArray(tags) || tags.length === 0) {
         document.getElementById("attrTags").innerHTML = "<div class='muted'>好みタグ: データなし</div>";
@@ -428,7 +331,7 @@
           const targetId = row.getAttribute("data-target-id") || "";
           const targetName = row.getAttribute("data-target-name") || "";
 
-          // ローディング表示
+          // ローディング
           openModal(targetName, targetId, "-", "-", 0);
           document.getElementById("attrGender").textContent = "読み込み中...";
           document.getElementById("attrAge").textContent = "";
@@ -436,7 +339,6 @@
 
           try {
             const stats = await fetchTargetStats(targetId);
-
             openModal(
               targetName,
               targetId,
@@ -444,7 +346,6 @@
               stats.selections || 0,
               stats.ctr || 0
             );
-
             renderAttr(stats);
           } catch (e) {
             document.getElementById("attrGender").textContent = "取得に失敗しました";
@@ -465,5 +366,4 @@
   </script>
 
 </body>
-
 </html>
