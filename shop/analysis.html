@@ -2,174 +2,468 @@
 <html lang="ja">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Shop - AI Analysis</title>
-    <link rel="stylesheet" href="../style.css" />
-    <style>
-        .analysis-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shop - 分析</title>
 
-        .chart-section {
-            margin-bottom: 24px;
-        }
+  <link rel="stylesheet" href="../customer/style.css" />
 
-        .chart-bar-container {
-            background: #eee;
-            border-radius: 12px;
-            height: 16px;
-            width: 100%;
-            margin: 6px 0;
-            overflow: hidden;
-            position: relative;
-        }
+  <style>
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
 
-        .chart-bar {
-            background: #007aff;
-            height: 100%;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      gap: 12px;
+    }
 
-        .chart-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            font-weight: 500;
-        }
+    .shop-id {
+      font-size: 13px;
+      color: #666;
+      margin-top: 6px;
+    }
 
-        .log-item {
-            border-bottom: 1px solid #f0f0f0;
-            padding: 12px 0;
-            font-size: 13px;
-            line-height: 1.4;
-        }
+    .muted {
+      color: #666;
+      font-size: 13px;
+    }
 
-        .tag-rank {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            line-height: 24px;
-            text-align: center;
-            background: #333;
-            color: #fff;
-            border-radius: 50%;
-            font-size: 12px;
-            margin-right: 10px;
-        }
+    /* ---- list ---- */
+    .target-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
 
-        .status-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            vertical-align: middle;
-            margin-left: 8px;
-        }
+    .target-item:active {
+      transform: scale(0.995);
+      opacity: 0.9;
+    }
 
-        .bg-red {
-            background: #ffe5e5;
-            color: #ff3b30;
-        }
-    </style>
+    .target-left {
+      text-align: left;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .target-title {
+      font-weight: 700;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .target-sub {
+      margin-top: 3px;
+      font-size: 12px;
+      color: #777;
+    }
+
+    /* ---- modal ---- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 9999;
+    }
+
+    .modal {
+      width: min(520px, 100%);
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #eee;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    .modal-sub {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #777;
+    }
+
+    .icon-btn {
+      border: 1px solid #eee;
+      background: #fff;
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.98);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .kpi {
+      background: #f7f7f7;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .kpi .label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .kpi .value {
+      font-size: 22px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .bar-wrap {
+      background: #eee;
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: #007aff;
+      transition: width .5s ease;
+    }
+
+    .modal-foot {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .modal-foot .btn {
+      width: 100%;
+      text-align: center;
+    }
+
+    /* ---- tag chips ---- */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .chip {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #eee;
+      background: #fff;
+      color: #333;
+    }
+
+    .chip .c {
+      color: #666;
+      margin-left: 6px;
+    }
+  </style>
 </head>
 
 <body>
-    <h1>AI マーケティング分析</h1>
-    <p class="muted">ユーザー行動から中野レンガ坂の最適解を抽出します。</p>
 
-    <div class="analysis-grid">
-
-        <div class="card">
-            <h3>📦 クーポン配布・在庫状況</h3>
-            <div id="stockStatus"></div>
-        </div>
-
-        <div class="card">
-            <h3>🎯 潜在需要分析（タグ・ジャンル）</h3>
-            <div id="tagRanking"></div>
-        </div>
-
-        <div class="card">
-            <h3>📄 最新のユーザー行動履歴</h3>
-            <div id="rawLogs" style="max-height: 300px; overflow-y: auto;"></div>
-        </div>
-
+  <div class="top-bar">
+    <div>
+      <h1 style="margin:0;">利用状況の分析</h1>
+      <div id="shopDisplay" class="shop-id"></div>
     </div>
+    <a href="home.html" class="btn secondary">ホームに戻る</a>
+  </div>
 
-    <div class="toolbar" style="margin-top:20px;">
-        <a href="index.html" class="btn secondary">ダッシュボードへ戻る</a>
+  <p class="muted">
+    この店舗のクーポン候補（商品カテゴリ）を一覧表示します。
+    各項目をクリックすると、表示回数・選択回数・選択率と、選択した人の特徴を確認できます。
+  </p>
+
+  <div class="analysis-grid">
+    <div class="card">
+      <h3>🗂 クーポン候補（商品カテゴリ）一覧</h3>
+      <div id="targetsList"></div>
     </div>
+  </div>
 
-    <script src="../customer/app.js"></script>
-    <script>
-        const KEY_USERDATA = "hk_userdata_v1";
-        const KEY_SHARED_POOL = "hk_shared_coupon_pool_v1";
+  <!-- modal -->
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div style="min-width:0;">
+          <p id="modalTitle" class="modal-title"></p>
+          <div id="modalSub" class="modal-sub"></div>
+        </div>
+        <button id="modalCloseBtn" class="icon-btn">閉じる</button>
+      </div>
 
-        function analyze() {
-            const allUserData = JSON.parse(localStorage.getItem(KEY_USERDATA)) || {};
-            const pool = JSON.parse(localStorage.getItem(KEY_SHARED_POOL)) || [];
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="label">表示回数</div>
+          <div id="kpiImpressions" class="value">-</div>
+        </div>
+        <div class="kpi">
+          <div class="label">選択回数</div>
+          <div id="kpiSelections" class="value">-</div>
+        </div>
+      </div>
 
-            const tagStats = {};
-            const rawLogs = [];
+      <div class="kpi" style="margin-top:10px;">
+        <div class="label">選択率（CTR）</div>
+        <div id="kpiCtr" class="value">-</div>
+        <div class="bar-wrap"><div id="ctrBar" class="bar"></div></div>
+      </div>
 
-            // 1. 全ユーザーのログを集計
-            Object.values(allUserData).forEach(user => {
-                if (!user.logs) return;
-                user.logs.forEach(log => {
-                    // 興味関心(Preferences)の傾向分析
-                    if (log.userProfile && log.userProfile.preferences) {
-                        log.userProfile.preferences.forEach(p => {
-                            tagStats[p] = (tagStats[p] || 0) + 1;
-                        });
-                    }
-                    rawLogs.push(log);
-                });
-            });
+      <div class="kpi" style="margin-top:10px;">
+        <div class="label">選択した人の特徴</div>
+        <div id="attrGender" class="muted" style="margin-top:6px;"></div>
+        <div id="attrAge" class="muted" style="margin-top:6px;"></div>
+        <div id="attrTags" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
 
-            // 2. 在庫状況（配布率）の描画
-            document.querySelector("#stockStatus").innerHTML = pool.map(c => {
-                const used = c.initialStock - c.remainingStock;
-                const rate = Math.floor((used / c.initialStock) * 100);
-                const isLow = c.remainingStock <= 5;
+  <script>
+    const KEY_SHOP_SESSION = "hk_shop_session_v1";
 
-                return `
-                    <div class="chart-section">
-                        <div class="chart-label">
-                            <span>${c.title} ${isLow ? '<span class="status-badge bg-red">残りわずか</span>' : ''}</span>
-                            <span>配布率 ${rate}% (${c.remainingStock}枚/残)</span>
-                        </div>
-                        <div class="chart-bar-container">
-                            <div class="chart-bar" style="width: ${rate}%; background: ${rate > 80 ? '#ff3b30' : '#007aff'}"></div>
-                        </div>
-                    </div>
-                `;
-            }).join("") || "<p class='muted'>公開中のクーポンがありません</p>";
+    // ✅ 既に動いている：カテゴリ一覧
+    const API_TARGETS =
+      "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_targets_list.php";
 
-            // 3. 需要予測（人気タグ）の描画
-            const sortedTags = Object.entries(tagStats).sort((a, b) => b[1] - a[1]);
-            document.querySelector("#tagRanking").innerHTML = sortedTags.map(([tag, count], idx) => `
-                <div style="margin-bottom:12px; display:flex; align-items:center;">
-                    <span class="tag-rank">${idx + 1}</span>
-                    <span style="flex-grow:1; font-size:14px;"><strong>${tag}</strong> に対するユーザーの関心</span>
-                    <span class="muted" style="font-size:12px;">${count} ログ</span>
-                </div>
-            `).join("") || "<p class='muted'>十分なデータが蓄積されていません</p>";
+    // ✅ ここをあなたの集計APIにする（重要）
+    // あなたが貼ったPHPを、このファイル名で配置してね：
+    // /hakkathon2025/server/api/shop_get_analysis.php
+    const API_TARGET_STATS =
+      "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_get_analysis.php";
 
-            // 4. 最新ログ（逆時系列）
-            document.querySelector("#rawLogs").innerHTML = rawLogs.sort((a, b) => b.timestamp - a.timestamp).map(log => `
-                <div class="log-item">
-                    <strong>${log.selectedCoupon}</strong> を獲得<br>
-                    <span class="muted">属性: ${log.userProfile.gender || '未設定'} / ${log.userProfile.age || '不明'}歳 / ${log.receiptContext.store || '店舗不明'}経由</span>
-                </div>
-            `).join("") || "<p class='muted'>ログはありません</p>";
-        }
+    function safeParse(raw, fallback) {
+      try { return JSON.parse(raw); } catch (e) { return fallback; }
+    }
 
-        // 実行
-        analyze();
-        setInterval(analyze, 3000);
-    </script>
+    const session = safeParse(localStorage.getItem(KEY_SHOP_SESSION), null);
+    if (!session || !session.shopId) location.href = "./index.html";
+
+    const SHOP_ID = session.shopId;
+    const SHOP_NAME = session.shopName || "";
+    const GENRE = session.genre || "";
+
+    const namePart = SHOP_NAME ? (" / " + SHOP_NAME) : "";
+    const genrePart = GENRE ? ("（" + GENRE + "）") : "";
+
+    document.getElementById("shopDisplay").textContent =
+      "店舗ID: " + SHOP_ID + namePart + genrePart;
+
+    async function fetchTargets() {
+      const res = await fetch(API_TARGETS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shop_id: SHOP_ID })
+      });
+
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); }
+      catch (e) {
+        console.log("targets raw response:", text);
+        return { ok: false, items: [] };
+      }
+
+      if (!json.ok || !Array.isArray(json.items)) return { ok: false, items: [] };
+      return { ok: true, items: json.items };
+    }
+
+    async function fetchTargetStats(targetId) {
+      const res = await fetch(API_TARGET_STATS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shop_id: SHOP_ID, target_id: targetId })
+      });
+
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); }
+      catch (e) {
+        console.log("stats raw response:", text);
+        throw new Error("集計APIの返答がJSONではありません");
+      }
+
+      if (!json.ok) {
+        throw new Error(json.message || "集計APIエラー");
+      }
+      return json;
+    }
+
+    // ===== modal =====
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
+
+    function openModal(title, sub, impressions, selections, ctr) {
+      document.getElementById("modalTitle").textContent = title;
+      document.getElementById("modalSub").textContent = sub;
+
+      document.getElementById("kpiImpressions").textContent = String(impressions);
+      document.getElementById("kpiSelections").textContent = String(selections);
+
+      const ctrNum = Number(ctr || 0);
+      document.getElementById("kpiCtr").textContent = (ctrNum * 100).toFixed(1) + "%";
+
+      const bar = document.getElementById("ctrBar");
+      const pct = Math.max(0, Math.min(100, Math.round(ctrNum * 100)));
+      bar.style.width = pct + "%";
+
+      modalBackdrop.style.display = "flex";
+    }
+
+    function closeModal() {
+      modalBackdrop.style.display = "none";
+    }
+
+    modalCloseBtn.addEventListener("click", closeModal);
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+
+    function renderAttr(stats) {
+      const g = stats.genderCounts || {};
+      const a = stats.ageBuckets || {};
+      const tags = stats.topTags || [];
+      const totalSel = Number(stats.selections || 0);
+
+      if (totalSel === 0) {
+        document.getElementById("attrGender").textContent = "性別: データなし";
+        document.getElementById("attrAge").textContent = "年齢: データなし";
+        document.getElementById("attrTags").innerHTML = "<div class='muted'>好みタグ: データなし</div>";
+        return;
+      }
+
+      const genderText =
+        "性別: male " + (g.male || 0) +
+        ", female " + (g.female || 0) +
+        ", other " + (g.other || 0) +
+        ", unknown " + (g.unknown || 0);
+
+      const ageText =
+        "年齢: -19 " + (a["-19"] || 0) +
+        ", 20s " + (a["20s"] || 0) +
+        ", 30s " + (a["30s"] || 0) +
+        ", 40s " + (a["40s"] || 0) +
+        ", 50+ " + (a["50+"] || 0) +
+        ", unknown " + (a.unknown || 0);
+
+      document.getElementById("attrGender").textContent = genderText;
+      document.getElementById("attrAge").textContent = ageText;
+
+      if (!Array.isArray(tags) || tags.length === 0) {
+        document.getElementById("attrTags").innerHTML = "<div class='muted'>好みタグ: データなし</div>";
+        return;
+      }
+
+      document.getElementById("attrTags").innerHTML =
+        "<div class='muted'>好みタグ（上位）</div>" +
+        "<div class='chips'>" +
+        tags.map(function (t) {
+          return "<span class='chip'>" + t.tag + "<span class='c'>" + t.count + "</span></span>";
+        }).join("") +
+        "</div>";
+    }
+
+    function renderTargets(items) {
+      const el = document.getElementById("targetsList");
+
+      if (!items || items.length === 0) {
+        el.innerHTML = "<p class='muted'>候補がありません（coupon_targetsが未登録 or shop_idが違う可能性）</p>";
+        return;
+      }
+
+      el.innerHTML = items.map(function (t) {
+        return (
+          "<div class='target-item' data-target-id='" + t.target_id + "' data-target-name='" + t.target_name + "'>" +
+          "  <div class='target-left'>" +
+          "    <div class='target-title'>" + t.target_name + "</div>" +
+          "    <div class='target-sub'>" + t.target_id + "</div>" +
+          "  </div>" +
+          "</div>"
+        );
+      }).join("");
+
+      Array.prototype.forEach.call(el.querySelectorAll(".target-item"), function (row) {
+        row.addEventListener("click", async function () {
+          const targetId = row.getAttribute("data-target-id") || "";
+          const targetName = row.getAttribute("data-target-name") || "";
+
+          // ローディング表示
+          openModal(targetName, targetId, "-", "-", 0);
+          document.getElementById("attrGender").textContent = "読み込み中...";
+          document.getElementById("attrAge").textContent = "";
+          document.getElementById("attrTags").innerHTML = "";
+
+          try {
+            const stats = await fetchTargetStats(targetId);
+
+            openModal(
+              targetName,
+              targetId,
+              stats.impressions || 0,
+              stats.selections || 0,
+              stats.ctr || 0
+            );
+
+            renderAttr(stats);
+          } catch (e) {
+            document.getElementById("attrGender").textContent = "取得に失敗しました";
+            document.getElementById("attrAge").textContent = "";
+            document.getElementById("attrTags").innerHTML =
+              "<div class='muted'>" + String(e.message || e) + "</div>";
+          }
+        });
+      });
+    }
+
+    async function init() {
+      const r = await fetchTargets();
+      renderTargets(r.ok ? r.items : []);
+    }
+
+    init();
+  </script>
+
 </body>
 
 </html>

@@ -21,11 +21,30 @@
 
   <script src="../app.js"></script>
   <script>
-    // app.js が読み込めている前提
     requireLoginFromPages();
 
     const API_BASE = "https://shigematsu.nkmr.io/hakkathon2025/server/api";
     const API_CANDIDATES = `${API_BASE}/user_coupons_candidates.php`;
+
+    // ★追加：ログ保存API
+    const API_LOG = `${API_BASE}/user_coupon_choice_log_create.php`;
+
+    // ★追加：ログ送信関数
+    async function sendChoiceLog(userId, shownIds, selectedId) {
+      try {
+        await fetch(API_LOG, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: userId,
+            shown_coupon_ids: shownIds,
+            selected_coupon_id: selectedId
+          })
+        });
+      } catch (e) {
+        console.error("ログ送信失敗:", e);
+      }
+    }
 
     async function fetchCandidatesFromDB() {
       const res = await fetch(API_CANDIDATES, {
@@ -71,7 +90,6 @@
       });
     }
 
-    // 3枚未満ならダミーで埋める（画像エリアは No Image のまま）
     function ensureThree(list) {
       const out = [...list];
       let n = 1;
@@ -91,7 +109,6 @@
     async function buildCandidates() {
       const items = await fetchCandidatesFromDB();
 
-      // 念のためキーを正規化（imageUrlが無くてもOK）
       const normalized = (items || []).map(x => ({
         id: x.id,
         shopName: x.shopName ?? "店舗",
@@ -119,7 +136,6 @@
       }
     }
 
-    // ★ここで「画像エリア」を元コードと同じ形で復活させる
     function render(candidates) {
       qs("#grid").innerHTML = candidates.map(c => `
         <div class="coupon">
@@ -150,7 +166,11 @@
           const picked = candidates.find(c => String(c.id) === String(id));
           if (!picked) return;
 
-          // 選択IDだけ保存（ダミーは保存しない）
+          // ★追加：ログ送信（選択）
+          const userId = getUserId();
+          const shownIds = candidates.filter(x => !x.isDummy).map(x => x.id);
+          sendChoiceLog(userId, shownIds, picked.id);
+
           if (!picked.isDummy) {
             saveMyData(d => {
               d.selectedCouponIds = d.selectedCouponIds ?? [];
@@ -171,9 +191,7 @@
     async function init() {
       try {
         const candidates = await buildCandidates();
-        // 表示中候補を保存（必要なら）
         saveMyData(d => { d.candidates = candidates; return d; });
-
         render(candidates);
         updateRetryDisplay();
       } catch (e) {
@@ -187,6 +205,15 @@
 
     on("#regenBtn", "click", async () => {
       try {
+        const current = loadMyData()?.candidates ?? [];
+
+        // ★追加：やり直し時のNULLログ送信
+        const userId = getUserId();
+        const shownIds = current.filter(x => !x.isDummy).map(x => x.id);
+        if (shownIds.length > 0) {
+          sendChoiceLog(userId, shownIds, null);
+        }
+
         consumeOneRetryOrThrow();
         const candidates = await buildCandidates();
         saveMyData(d => { d.candidates = candidates; return d; });
