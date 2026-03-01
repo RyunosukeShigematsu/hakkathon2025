@@ -1,149 +1,122 @@
 <!doctype html>
 <html lang="ja">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Shop - Dashboard</title>
-    <link rel="stylesheet" href="../customer/style.css" />
-    <style>
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: #f0f7ff;
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid #d0e3ff;
-            cursor: pointer;
-            /* クリック可能であることを示す */
-            transition: transform 0.2s;
-        }
-
-        .stat-card:active {
-            transform: scale(0.95);
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #007aff;
-            display: block;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #666;
-        }
-
-        /* 詳細表示エリアのスタイル */
-        .quick-view {
-            margin-top: 10px;
-            padding: 10px;
-            background: #fff;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            display: none;
-            /* 最初は隠しておく */
-        }
-
-        .quick-item {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            padding: 4px 0;
-            border-bottom: 1px solid #f9f9f9;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shop - Login</title>
+  <link rel="stylesheet" href="../customer/style.css" />
+  <style>
+    body {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+    }
+    .login-card {
+      width:100%;
+      max-width:420px;
+    }
+    .field {
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-bottom:14px;
+    }
+    .error {
+      display:none;
+      margin-top:10px;
+      color:#ff3b30;
+      font-size:13px;
+    }
+  </style>
 </head>
 
 <body>
-    <h1>店舗管理ダッシュボード</h1>
-    <p class="muted">中野レンガ坂 商店街管理システム</p>
+  <div class="card login-card">
+    <h1 style="margin-bottom:6px;">店舗ログイン</h1>
+    <p class="muted" style="margin-bottom:20px;">
+      中野レンガ坂 商店街管理システム
+    </p>
 
-    <div class="stat-grid">
-        <div class="stat-card" id="couponCard">
-            <span id="couponCount" class="stat-value">0</span>
-            <span class="stat-label">公開中のクーポン ▾</span>
-            <div id="couponQuickView" class="quick-view text-left">
-            </div>
-        </div>
+    <form id="loginForm">
+      <div class="field">
+        <label>店舗ID</label>
+        <input type="text" id="shopId" required />
+      </div>
 
-        <div class="stat-card">
-            <span id="logCount" class="stat-value">0</span>
-            <span class="stat-label">蓄積された行動ログ</span>
-        </div>
-    </div>
+      <div class="field">
+        <label>パスワード</label>
+        <input type="password" id="password" required />
+      </div>
 
-    <div class="card row">
-        <h2>クイックメニュー</h2>
-        <div class="toolbar" style="flex-direction: column; align-items: stretch; gap: 10px;">
-            <a class="btn primary" href="create_coupon.html" style="text-align: center;">＋ 新しいクーポンを発行する</a>
-            <a class="btn secondary" href="analysis.html" style="text-align: center;">📊 AI分析・利用状況を確認</a>
-        </div>
-    </div>
+      <button class="btn primary" type="submit" style="width:100%;">
+        ログイン
+      </button>
 
-    <div class="card row" style="margin-top:20px;">
-        <h3>最近のシステム状況</h3>
-        <ul id="systemStatus" class="muted" style="font-size:13px; padding-left:20px;">
-            <li>システムは正常に動作しています。</li>
-        </ul>
-    </div>
+      <div id="errorMsg" class="error"></div>
+    </form>
+  </div>
 
-    <div class="toolbar" style="margin-top:20px;">
-        <a href="../index.html" class="btn">サービスTOPへ戻る</a>
-    </div>
+  <script>
+    const KEY_SHOP_SESSION = "hk_shop_session_v1";
 
-    <script>
-        const KEY_SHARED_POOL = "hk_shared_coupon_pool_v1";
-        const KEY_USERDATA = "hk_userdata_v1";
+    // ★ローカルHTMLからサーバAPIを叩くため絶対URL
+    const API_LOGIN = "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_login.php";
 
-        function updateDashboard() {
-            // 1. 公開中クーポンの詳細と数
-            const pool = JSON.parse(localStorage.getItem(KEY_SHARED_POOL)) || [];
-            document.querySelector("#couponCount").textContent = pool.length;
+    // 既にログインしていたらhomeへ
+    const existing = localStorage.getItem(KEY_SHOP_SESSION);
+    if (existing) {
+      location.href = "./home.html";
+    }
 
-            const quickView = document.querySelector("#couponQuickView");
-            if (pool.length > 0) {
-                quickView.innerHTML = pool.map(c => `
-                    <div class="quick-item">
-                        <span>${c.title}</span>
-                        <strong style="color:${c.remainingStock <= 5 ? '#ff3b30' : '#007aff'}">${c.remainingStock}枚</strong>
-                    </div>
-                `).join("");
-            } else {
-                quickView.innerHTML = "<p class='muted'>なし</p>";
-            }
+    document.getElementById("loginForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
 
-            // 2. 蓄積されたログの総数
-            const allUserData = JSON.parse(localStorage.getItem(KEY_USERDATA)) || {};
-            let totalLogs = 0;
-            Object.values(allUserData).forEach(user => {
-                if (user.logs) totalLogs += user.logs.length;
-            });
-            document.querySelector("#logCount").textContent = totalLogs;
+      const shopId = document.getElementById("shopId").value.trim();
+      const password = document.getElementById("password").value;
+      const errorMsg = document.getElementById("errorMsg");
 
-            const statusList = document.querySelector("#systemStatus");
-            if (totalLogs > 0) {
-                statusList.innerHTML = `<li>現在、${totalLogs}件のユーザー行動を学習用データとして蓄積済みです。</li>`;
-            }
-        }
+      errorMsg.style.display = "none";
 
-        // クリックで詳細を表示/非表示にする
-        document.querySelector("#couponCard").addEventListener("click", () => {
-            const view = document.querySelector("#couponQuickView");
-            const isVisible = view.style.display === "block";
-            view.style.display = isVisible ? "none" : "block";
+      if (!shopId || !password) {
+        errorMsg.textContent = "店舗IDとパスワードを入力してください。";
+        errorMsg.style.display = "block";
+        return;
+      }
+
+      try {
+        const res = await fetch(API_LOGIN, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shop_id: shopId,
+            password: password
+          })
         });
 
-        updateDashboard();
-        setInterval(updateDashboard, 5000);
-    </script>
-</body>
+        const json = await res.json().catch(() => ({}));
 
+        if (!res.ok) {
+          errorMsg.textContent = json.message || "ログインに失敗しました。";
+          errorMsg.style.display = "block";
+          return;
+        }
+
+        // セッション保存
+        localStorage.setItem(KEY_SHOP_SESSION, JSON.stringify({
+          shopId: json.shop_id,
+          shopName: json.shop_name,
+          genre: json.genre,
+          at: Date.now()
+        }));
+
+        location.href = "./home.html";
+
+      } catch (e) {
+        errorMsg.textContent = "通信に失敗しました。";
+        errorMsg.style.display = "block";
+      }
+    });
+  </script>
+</body>
 </html>

@@ -2,220 +2,249 @@
 <html lang="ja">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Shop - Management</title>
-    <link rel="stylesheet" href="../customer/style.css" />
-    <style>
-        .coupon-admin-card {
-            background: #fff;
-            border: 1px solid #eee;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shop - クーポン作成</title>
+  <link rel="stylesheet" href="../customer/style.css" />
+  <style>
+    .age-range-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-        .stock-indicator {
-            font-size: 14px;
-            font-weight: bold;
-            color: #007aff;
-            margin-top: 8px;
-        }
+    .age-range-group input {
+      flex: 1;
+    }
 
-        .low-stock {
-            color: #ff3b30;
-        }
-
-        .editing {
-            border: 2px solid #007aff;
-            background: #f0f7ff;
-        }
-
-        .age-range-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .age-range-group input {
-            flex: 1;
-        }
-    </style>
+    .muted {
+      color: #666;
+      font-size: 13px;
+    }
+  </style>
 </head>
 
 <body>
-    <h1>【店舗用】クーポン管理パネル</h1>
-    <p class="muted">ターゲット年齢層をレンジで設定し、より精度の高いAIマッチングを行います。</p>
+  <h1>【店舗用】クーポン作成</h1>
+  <p class="muted">自店舗のカテゴリを選択し、割引タイプとターゲットを設定します。</p>
 
-    <div class="card row" id="inputForm">
-        <h2 id="formTitle" style="margin-top:0;">新規クーポン作成</h2>
-        <input type="hidden" id="editId">
+  <div class="card row">
+    <p class="muted" id="shopDisplay" style="margin-top:0;"></p>
 
-        <label>クーポンタイトル</label>
-        <input id="title" placeholder="例: 【大学生限定】ランチドリンク無料">
+    <!-- DBから取得して表示 -->
+    <label>クーポン対象カテゴリ</label>
+    <select id="targetId"></select>
 
-        <label>割引額 または 相当額 (円)</label>
-        <input id="off" type="number" placeholder="例: 200">
+    <label>割引タイプ</label>
+    <select id="discountType">
+      <option value="free">無料</option>
+      <option value="percent">〇〇%引</option>
+      <option value="amount">〇円引</option>
+    </select>
 
-        <label>ターゲット性別</label>
-        <select id="targetGender">
-            <option value="all">全員</option>
-            <option value="male">男性</option>
-            <option value="female">女性</option>
-        </select>
+    <label id="discountValueLabel">割引値</label>
+    <input id="discountValue" type="number" placeholder="例: 20">
 
-        <label>ターゲット年齢層（最小 〜 最大）</label>
-        <div class="age-range-group">
-            <input id="targetAgeMin" type="number" placeholder="最小 (0)">
-            <span>〜</span>
-            <input id="targetAgeMax" type="number" placeholder="最大 (99)">
-        </div>
+    <label>ターゲット性別</label>
+    <select id="targetGender">
+      <option value="all">全員</option>
+      <option value="male">男性</option>
+      <option value="female">女性</option>
+    </select>
 
-        <label>関連タグ（カンマ区切り）</label>
-        <input id="tags" placeholder="例: バル,カフェ,学生">
-
-        <label id="stockLabel">発行枚数（在庫上限）</label>
-        <input id="totalStock" type="number" placeholder="例: 50">
-
-        <div class="toolbar">
-            <button class="primary" id="publishBtn">クーポンを公開・更新</button>
-            <button class="secondary" id="cancelBtn" style="display:none;">キャンセル</button>
-            <button class="secondary" id="clearBtn" style="color:#ff3b30;">全リセット</button>
-        </div>
+    <label>ターゲット年齢層（最小 〜 最大）</label>
+    <div class="age-range-group">
+      <input id="targetAgeMin" type="number" placeholder="最小 (0)">
+      <span>〜</span>
+      <input id="targetAgeMax" type="number" placeholder="最大 (99)">
     </div>
 
-    <hr />
+    <label>関連タグ（カンマ区切り）</label>
+    <input id="tags" placeholder="例: 学生,ランチ,ドリンク">
 
-    <h2>現在公開中のクーポン・発行状況</h2>
-    <div id="poolList"></div>
+    <label>発行枚数（在庫上限）</label>
+    <input id="totalStock" type="number" placeholder="例: 50">
 
-    <div class="toolbar" style="margin-top:20px;">
-        <a href="index.html" class="btn secondary">ダッシュボードへ戻る</a>
+    <div class="toolbar">
+      <button class="primary" id="publishBtn">公開</button>
     </div>
+  </div>
 
-    <script>
-        const KEY_SHARED_POOL = "hk_shared_coupon_pool_v1";
+  <div class="toolbar" style="margin-top:20px;">
+    <a href="home.html" class="btn secondary">ホーム画面に戻る</a>
+  </div>
 
-        function loadPool() { return JSON.parse(localStorage.getItem(KEY_SHARED_POOL)) || []; }
+  <script>
+    const KEY_SHOP_SESSION = "hk_shop_session_v1";
 
-        function renderPool() {
-            const pool = loadPool();
-            const listEl = document.querySelector("#poolList");
-            const editId = document.querySelector("#editId").value;
+    // DBからカテゴリを取るAPI（PHP）
+    const API_TARGETS = "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_targets_list.php";
 
-            if (pool.length === 0) {
-                listEl.innerHTML = "<p class='muted'>公開中のクーポンはありません。</p>";
-                return;
-            }
+    // DBにクーポンを保存するAPI（PHP）
+    const API_CREATE_COUPON = "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_coupon_create.php";
 
-            listEl.innerHTML = pool.map(c => {
-                const isEditing = c.id === editId;
-                const outOfStock = c.remainingStock <= 0;
-                return `
-                <div class="coupon-admin-card ${isEditing ? 'editing' : ''}">
-                    <div style="display:flex; justify-content:space-between;">
-                        <strong>${c.title}</strong>
-                        <span class="muted" style="font-size:12px;">${new Date(c.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <div class="muted" style="font-size:13px;">
-                        価値: ${c.off}円 | 
-                        対象: ${c.target.age_min}〜${c.target.age_max}歳 (${c.target.gender})
-                    </div>
-                    <div class="stock-indicator ${outOfStock ? 'low-stock' : ''}">
-                        残り ${c.remainingStock} / ${c.initialStock} 枚
-                    </div>
-                    <div class="toolbar" style="margin-top:10px; gap:8px;">
-                        <button class="btn primary" style="font-size:12px; padding:4px 8px;" onclick="startEdit('${c.id}')">編集</button>
-                        <button class="btn secondary" style="font-size:12px; padding:4px 8px; color:#ff3b30;" onclick="deleteCoupon('${c.id}')">削除</button>
-                    </div>
-                </div>
-                `;
-            }).join("");
-        }
+    function getSession() {
+      try { return JSON.parse(localStorage.getItem(KEY_SHOP_SESSION) || "null"); }
+      catch { return null; }
+    }
 
-        window.startEdit = function (id) {
-            const coupon = loadPool().find(c => c.id === id);
-            if (!coupon) return;
+    function syncDiscountUI() {
+      const type = document.getElementById("discountType").value;
+      const input = document.getElementById("discountValue");
+      const label = document.getElementById("discountValueLabel");
 
-            document.querySelector("#formTitle").textContent = "クーポンの編集";
-            document.querySelector("#editId").value = coupon.id;
-            document.querySelector("#title").value = coupon.title;
-            document.querySelector("#off").value = coupon.off;
-            document.querySelector("#targetGender").value = coupon.target.gender;
-            document.querySelector("#targetAgeMin").value = coupon.target.age_min;
-            document.querySelector("#targetAgeMax").value = coupon.target.age_max;
-            document.querySelector("#tags").value = coupon.tags.join(",");
-            document.querySelector("#totalStock").value = coupon.initialStock;
+      if (type === "free") {
+        label.textContent = "割引値（不要）";
+        input.value = 0;
+        input.disabled = true;
+      } else if (type === "percent") {
+        label.textContent = "割引率（%）";
+        input.disabled = false;
+        input.placeholder = "例: 20";
+      } else {
+        label.textContent = "割引額（円）";
+        input.disabled = false;
+        input.placeholder = "例: 200";
+      }
+    }
 
-            document.querySelector("#cancelBtn").style.display = "inline-block";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            renderPool();
-        };
+    async function loadTargets() {
+      const session = getSession();
+      if (!session?.shopId) {
+        alert("ログイン情報がありません。ログイン画面へ戻ります。");
+        location.href = "index.html";
+        return;
+      }
 
-        function resetForm() {
-            document.querySelector("#formTitle").textContent = "新規クーポン作成";
-            document.querySelector("#editId").value = "";
-            document.querySelector("#title").value = "";
-            document.querySelector("#off").value = "";
-            document.querySelector("#targetAgeMin").value = "";
-            document.querySelector("#targetAgeMax").value = "";
-            document.querySelector("#totalStock").value = "";
-            document.querySelector("#tags").value = "";
-            document.querySelector("#cancelBtn").style.display = "none";
-        }
+      document.getElementById("shopDisplay").textContent =
+        `店舗ID: ${session.shopId} / ${session.shopName}`;
 
-        document.querySelector("#publishBtn").addEventListener("click", () => {
-            const editId = document.querySelector("#editId").value;
-            const title = document.querySelector("#title").value.trim();
-            const off = Number(document.querySelector("#off").value);
-            const gender = document.querySelector("#targetGender").value;
-            const ageMin = Number(document.querySelector("#targetAgeMin").value || 0);
-            const ageMax = Number(document.querySelector("#targetAgeMax").value || 99);
-            const tags = document.querySelector("#tags").value.split(",").map(s => s.trim()).filter(s => s !== "");
-            const newTotalStock = Number(document.querySelector("#totalStock").value);
+      const sel = document.getElementById("targetId");
+      sel.innerHTML = "";
 
-            if (!title || !off || !newTotalStock) { alert("必須項目を入力してください"); return; }
+      const res = await fetch(API_TARGETS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shop_id: session.shopId })
+      });
 
-            let pool = loadPool();
-            const couponData = {
-                title, off, tags,
-                target: { gender, age_min: ageMin, age_max: ageMax },
-                initialStock: newTotalStock
-            };
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); }
+      catch {
+        console.log("raw response:", text);
+        alert("サーバ応答が不正です（Network→Response確認）");
+        return;
+      }
 
-            if (editId) {
-                pool = pool.map(c => {
-                    if (c.id === editId) {
-                        const stockDiff = newTotalStock - c.initialStock;
-                        return { ...c, ...couponData, remainingStock: c.remainingStock + (stockDiff > 0 ? stockDiff : 0) };
-                    }
-                    return c;
-                });
-            } else {
-                pool.push({ ...couponData, id: crypto.randomUUID(), remainingStock: newTotalStock, createdAt: Date.now() });
-            }
+      if (!json.ok) {
+        console.log(json);
+        alert("カテゴリ取得に失敗しました");
+        return;
+      }
 
-            localStorage.setItem(KEY_SHARED_POOL, JSON.stringify(pool));
-            resetForm();
-            renderPool();
-            alert("保存しました。");
+      const items = (json.items || []).filter(x => x.is_active === 1);
+      if (items.length === 0) {
+        sel.innerHTML = `<option value="">カテゴリなし</option>`;
+        return;
+      }
+
+      for (const t of items) {
+        const opt = document.createElement("option");
+        opt.value = t.target_id;
+        opt.textContent = t.target_name;
+        sel.appendChild(opt);
+      }
+
+      sel.selectedIndex = 0;
+    }
+
+    document.getElementById("discountType").addEventListener("change", syncDiscountUI);
+
+    // 公開ボタン：DBへ保存
+    document.getElementById("publishBtn").addEventListener("click", async () => {
+      const session = getSession();
+      if (!session?.shopId) {
+        alert("ログイン情報がありません");
+        location.href = "index.html";
+        return;
+      }
+
+      const targetId = document.getElementById("targetId").value;
+      const discountType = document.getElementById("discountType").value;
+      const discountValue = Number(document.getElementById("discountValue").value);
+      const gender = document.getElementById("targetGender").value;
+      const ageMin = Number(document.getElementById("targetAgeMin").value || 0);
+      const ageMax = Number(document.getElementById("targetAgeMax").value || 99);
+      const tags = document.getElementById("tags").value.split(",").map(s => s.trim()).filter(Boolean);
+      const totalStock = Number(document.getElementById("totalStock").value);
+
+      if (!targetId || !totalStock) {
+        alert("カテゴリと発行枚数は必須です");
+        return;
+      }
+      if (discountType === "percent" && (discountValue <= 0 || discountValue > 100)) {
+        alert("割引率は 1〜100 で入力してください");
+        return;
+      }
+      if (discountType === "amount" && discountValue <= 0) {
+        alert("割引額は 1円以上で入力してください");
+        return;
+      }
+
+      try {
+        const res = await fetch(API_CREATE_COUPON, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shop_id: session.shopId,
+            target_id: targetId,
+            discount_type: discountType,
+            discount_value: discountType === "free" ? 0 : discountValue,
+            target_gender: gender,
+            target_age_min: ageMin,
+            target_age_max: ageMax,
+            tags: tags,
+            total_stock: totalStock
+          })
         });
 
-        window.deleteCoupon = function (id) {
-            if (!confirm("削除しますか？")) return;
-            localStorage.setItem(KEY_SHARED_POOL, JSON.stringify(loadPool().filter(c => c.id !== id)));
-            renderPool();
-        };
+        const text = await res.text();
+        let json;
+        try { json = JSON.parse(text); }
+        catch {
+          console.log("raw response:", text);
+          alert("サーバ応答が不正です（Network→Response確認）");
+          return;
+        }
 
-        document.querySelector("#cancelBtn").addEventListener("click", resetForm);
-        document.querySelector("#clearBtn").addEventListener("click", () => {
-            if (confirm("全データを消去しますか？")) { localStorage.removeItem(KEY_SHARED_POOL); renderPool(); }
-        });
+        if (!json.ok) {
+          console.log(json);
+          alert(json.message || "保存に失敗しました");
+          return;
+        }
 
-        setInterval(renderPool, 5000);
-        renderPool();
-    </script>
+        location.href = "home.html";
+
+        // 入力リセット
+        document.getElementById("discountType").value = "free";
+        syncDiscountUI();
+        document.getElementById("targetGender").value = "all";
+        document.getElementById("targetAgeMin").value = "";
+        document.getElementById("targetAgeMax").value = "";
+        document.getElementById("tags").value = "";
+        document.getElementById("totalStock").value = "";
+
+      } catch (e) {
+        console.error(e);
+        alert("通信エラー（API URL / サーバ / CORS を確認）");
+      }
+    });
+
+    // init
+    syncDiscountUI();
+    loadTargets();
+  </script>
 </body>
 
 </html>

@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="ja">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -22,43 +21,31 @@
 
   <script src="../app.js"></script>
   <script>
+    // app.js が読み込めている前提
     requireLoginFromPages();
 
-    // =========================================
-    // 将来：ここを「shop側で作ったクーポン一覧（DB/API）」に差し替えるだけ
-    // 1クーポン = 1つの塊（店・商品・割引・画像…）
-    // =========================================
-    const COUPON_CATALOG = [
-      {
-        id: "coupon_001",
-        shopId: "shop_01",
-        shopName: "仮店舗A",
-        productId: "p_01",
-        menuName: "割引対象メニューA",
-        discountPercent: 10,
-        imageUrl: null, // 例: "../images/coupon_a.png"
-      },
-      {
-        id: "coupon_002",
-        shopId: "shop_02",
-        shopName: "仮店舗B",
-        productId: "p_02",
-        menuName: "割引対象メニューB",
-        discountPercent: 20,
-        imageUrl: null,
-      },
-      {
-        id: "coupon_003",
-        shopId: "shop_03",
-        shopName: "仮店舗C",
-        productId: "p_03",
-        menuName: "割引対象メニューC",
-        discountPercent: 30,
-        imageUrl: null,
-      }
-    ];
+    const API_BASE = "https://shigematsu.nkmr.io/hakkathon2025/server/api";
+    const API_CANDIDATES = `${API_BASE}/user_coupons_candidates.php`;
 
-    // 配置をランダムにするだけ（クーポンの中身は塊のまま）
+    async function fetchCandidatesFromDB() {
+      const res = await fetch(API_CANDIDATES, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); }
+      catch {
+        console.log("raw response:", text);
+        throw new Error("サーバ応答が不正です（Network→Response確認）");
+      }
+
+      if (!res.ok || !json?.ok) throw new Error(json?.message ?? "取得失敗");
+      return json.items ?? [];
+    }
+
     function shuffle(arr) {
       const a = [...arr];
       for (let i = a.length - 1; i > 0; i--) {
@@ -71,17 +58,11 @@
     function consumeOneRetryOrThrow() {
       const d = loadMyData();
 
-      if (!d?.isRetryActive) {
-        throw new Error("やり直しは利用できません");
-      }
-      if ((d.retries ?? 0) <= 0) {
-        throw new Error("やり直し回数が残っていません");
-      }
+      if (!d?.isRetryActive) throw new Error("やり直しは利用できません");
+      if ((d.retries ?? 0) <= 0) throw new Error("やり直し回数が残っていません");
 
-      // 1回消費
       saveMyData(x => {
         x.retries = (x.retries ?? 0) - 1;
-        // 0になったら終了扱いにしてボタンを無効化
         if (x.retries <= 0) {
           x.retries = 0;
           x.isRetryActive = false;
@@ -90,18 +71,16 @@
       });
     }
 
-    // 常に3枚欲しいので、足りなければダミーを追加（将来はcatalogが十分ある前提でもOK）
+    // 3枚未満ならダミーで埋める（画像エリアは No Image のまま）
     function ensureThree(list) {
       const out = [...list];
       let n = 1;
       while (out.length < 3) {
         out.push({
           id: `dummy_${n++}`,
-          shopId: null,
           shopName: `仮店舗${out.length + 1}`,
-          productId: null,
           menuName: `割引対象メニュー${out.length + 1}`,
-          discountPercent: 10 * (out.length + 1),
+          discountLabel: `${10 * (out.length + 1)}% OFF`,
           imageUrl: null,
           isDummy: true
         });
@@ -109,10 +88,20 @@
       return out.slice(0, 3);
     }
 
-    // 候補生成（今は catalog からランダム配置するだけ）
-    function buildCandidates() {
-      const shuffled = shuffle(COUPON_CATALOG);
-      return ensureThree(shuffled).slice(0, 3);
+    async function buildCandidates() {
+      const items = await fetchCandidatesFromDB();
+
+      // 念のためキーを正規化（imageUrlが無くてもOK）
+      const normalized = (items || []).map(x => ({
+        id: x.id,
+        shopName: x.shopName ?? "店舗",
+        menuName: x.menuName ?? "対象メニュー",
+        discountLabel: x.discountLabel ?? "",
+        imageUrl: x.imageUrl ?? null,
+        isDummy: false
+      }));
+
+      return ensureThree(shuffle(normalized));
     }
 
     function updateRetryDisplay() {
@@ -130,18 +119,21 @@
       }
     }
 
+    // ★ここで「画像エリア」を元コードと同じ形で復活させる
     function render(candidates) {
       qs("#grid").innerHTML = candidates.map(c => `
         <div class="coupon">
           <strong>${c.shopName}</strong>
 
           <div style="margin:12px 0; border:1px solid #eee; border-radius:12px; height:120px; display:flex; align-items:center; justify-content:center; background:#fafafa; color:#999;">
-            ${c.imageUrl ? `<img src="${c.imageUrl}" style="max-width:100%; max-height:100%; border-radius:12px;">` : `No Image`}
+            ${c.imageUrl
+              ? `<img src="${c.imageUrl}" style="max-width:100%; max-height:100%; border-radius:12px;">`
+              : `No Image`}
           </div>
 
           <div class="muted">対象メニュー: <strong>${c.menuName}</strong></div>
           <div style="font-size:18px; font-weight:bold; margin:8px 0;">
-            ${c.discountPercent}% OFF
+            ${c.discountLabel ?? ""}
           </div>
 
           <div class="toolbar">
@@ -155,51 +147,51 @@
       qsa(".selectBtn").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = btn.dataset.id;
-          const picked = candidates.find(c => c.id === id);
+          const picked = candidates.find(c => String(c.id) === String(id));
           if (!picked) return;
 
-          // ★選択したクーポンを「塊のまま」保存
-          saveMyData(d => {
-            d.couponsOwned = d.couponsOwned ?? [];
-            d.couponsOwned.unshift({
-              id: picked.id,
-              shopId: picked.shopId,
-              shopName: picked.shopName,
-              productId: picked.productId,
-              menuName: picked.menuName,
-              discountPercent: picked.discountPercent,
-              imageUrl: picked.imageUrl,
-              acquiredAt: Date.now()
+          // 選択IDだけ保存（ダミーは保存しない）
+          if (!picked.isDummy) {
+            saveMyData(d => {
+              d.selectedCouponIds = d.selectedCouponIds ?? [];
+              if (!d.selectedCouponIds.includes(picked.id)) {
+                d.selectedCouponIds.unshift(picked.id);
+              }
+              d.isRetryActive = false;
+              d.retries = 0;
+              return d;
             });
-
-            d.candidates = [];
-            d.isRetryActive = false;
-            d.retries = 0;
-            return d;
-          });
+          }
 
           location.href = "home.html";
         });
       });
     }
 
-    function init() {
-      const candidates = buildCandidates();
-
-      // 画面表示に使っている候補を保存（他ページとの整合）
-      saveMyData(d => { d.candidates = candidates; return d; });
-
-      render(candidates);
-      updateRetryDisplay();
-    }
-
-    on("#regenBtn", "click", () => {
+    async function init() {
       try {
-        consumeOneRetryOrThrow();      // ★ここで回数を減らす
-        const candidates = buildCandidates();
+        const candidates = await buildCandidates();
+        // 表示中候補を保存（必要なら）
+        saveMyData(d => { d.candidates = candidates; return d; });
+
+        render(candidates);
+        updateRetryDisplay();
+      } catch (e) {
+        alert(e?.message ?? "初期表示に失敗しました（ダミー表示）");
+        const candidates = ensureThree([]);
         saveMyData(d => { d.candidates = candidates; return d; });
         render(candidates);
-        updateRetryDisplay();          // ★減った回数を反映
+        updateRetryDisplay();
+      }
+    }
+
+    on("#regenBtn", "click", async () => {
+      try {
+        consumeOneRetryOrThrow();
+        const candidates = await buildCandidates();
+        saveMyData(d => { d.candidates = candidates; return d; });
+        render(candidates);
+        updateRetryDisplay();
       } catch (e) {
         alert(e?.message ?? "やり直しに失敗しました");
         updateRetryDisplay();
@@ -209,5 +201,4 @@
     init();
   </script>
 </body>
-
 </html>

@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shop - Dashboard</title>
+  <link rel="stylesheet" href="../customer/style.css" />
+  <style>
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: #f0f7ff;
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid #d0e3ff;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .stat-card:active {
+      transform: scale(0.95);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #007aff;
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .quick-view {
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .quick-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f2f2f2;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .quick-left {
+      text-align: left;
+      flex: 1;
+    }
+
+    .shop-id {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="top-bar">
+    <div>
+      <h1 style="margin:0;">店舗ホーム</h1>
+      <div id="shopDisplay" class="shop-id"></div>
+    </div>
+    <button id="logoutBtn" class="btn secondary">ログアウト</button>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card" id="couponCard">
+      <span id="couponCount" class="stat-value">0</span>
+      <span class="stat-label">公開中のクーポン ▾</span>
+      <div id="couponQuickView" class="quick-view"></div>
+    </div>
+  </div>
+
+  <div class="card row">
+    <h2>クイックメニュー</h2>
+    <div class="toolbar" style="flex-direction: column; align-items: stretch; gap: 10px;">
+      <a class="btn primary" href="create_coupon.html" style="text-align: center;">＋ 新しいクーポンを発行する</a>
+      <a class="btn secondary" href="analysis.html" style="text-align: center;">📊 AI分析・利用状況を確認</a>
+    </div>
+  </div>
+
+  <script>
+    const KEY_SHOP_SESSION = "hk_shop_session_v1";
+
+    // DBから自店舗クーポン一覧を取るAPI
+    const API_SHOP_COUPONS = "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_coupons_list.php";
+
+    function safeParse(raw, fallback) {
+      try { return JSON.parse(raw); } catch { return fallback; }
+    }
+
+    // ===== ログインチェック =====
+    const session = safeParse(localStorage.getItem(KEY_SHOP_SESSION), null);
+    if (!session?.shopId) location.href = "./index.html";
+
+    const SHOP_ID = session.shopId;
+    const SHOP_NAME = session.shopName || "";
+    const GENRE = session.genre || "";
+
+    const namePart = SHOP_NAME ? ` / ${SHOP_NAME}` : "";
+    const genrePart = GENRE ? `（${GENRE}）` : "";
+
+    document.getElementById("shopDisplay").textContent =
+      `店舗ID: ${SHOP_ID}${namePart}${genrePart}`;
+
+    function discountLabel(type, value) {
+      if (type === "free") return "無料";
+      if (type === "percent") return `${value}%引`;
+      return `${value}円引`;
+    }
+
+    // 時間制限型の残り枚数表示
+    function calcRemaining(totalStock, createdAt, expiresAt) {
+      const now = Date.now();
+      const start = new Date(createdAt).getTime();
+      const end = new Date(expiresAt).getTime();
+      if (!start || !end || now >= end) return 0;
+      const progress = (now - start) / (end - start);
+      const remaining = Math.ceil(totalStock * (1 - progress));
+      return remaining < 0 ? 0 : remaining;
+    }
+
+    async function fetchShopCoupons() {
+      const res = await fetch(API_SHOP_COUPONS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shop_id: SHOP_ID })
+      });
+
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); }
+      catch {
+        console.log("raw response:", text);
+        return { ok: false, items: [] };
+      }
+
+      if (!json.ok || !Array.isArray(json.items)) return { ok: false, items: [] };
+      return { ok: true, items: json.items };
+    }
+
+    let latestCoupons = [];
+
+    async function updateDashboardFromDB() {
+      const { ok, items } = await fetchShopCoupons();
+      latestCoupons = ok ? items : [];
+
+      document.getElementById("couponCount").textContent = latestCoupons.length;
+
+      const quickView = document.getElementById("couponQuickView");
+      if (latestCoupons.length === 0) {
+        quickView.innerHTML = "<span class='muted'>なし</span>";
+        return;
+      }
+
+      quickView.innerHTML = latestCoupons.map(c => {
+        const remaining = calcRemaining(c.total_stock, c.created_at, c.expires_at);
+        const color = remaining <= 5 ? "#ff3b30" : "#007aff";
+        const line1 = `${c.target_name} / ${discountLabel(c.discount_type, c.discount_value)}`;
+        const line2 = `${c.target_age_min}〜${c.target_age_max}歳 (${c.target_gender})`;
+
+        return `
+          <div class="quick-item">
+            <div class="quick-left">
+              <div>${line1}</div>
+              <div class="muted" style="font-size:12px;">${line2}</div>
+            </div>
+            <strong style="color:${color}; white-space:nowrap;">
+              ${remaining}枚
+            </strong>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // 残り枚数だけは毎秒更新（DBに毎秒問い合わせない）
+    function tickRemainingOnly() {
+      const quickView = document.getElementById("couponQuickView");
+      if (!latestCoupons || latestCoupons.length === 0) return;
+
+      quickView.querySelectorAll(".quick-item").forEach((el, idx) => {
+        const c = latestCoupons[idx];
+        if (!c) return;
+        const remaining = calcRemaining(c.total_stock, c.created_at, c.expires_at);
+        const strong = el.querySelector("strong");
+        if (strong) {
+          strong.textContent = `${remaining}枚`;
+          strong.style.color = (remaining <= 5) ? "#ff3b30" : "#007aff";
+        }
+      });
+    }
+
+    // クーポン詳細トグル
+    document.getElementById("couponCard").addEventListener("click", () => {
+      const view = document.getElementById("couponQuickView");
+      view.style.display = view.style.display === "block" ? "none" : "block";
+    });
+
+    // ログアウト
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem(KEY_SHOP_SESSION);
+      location.href = "./index.html";
+    });
+
+    // init
+    updateDashboardFromDB();
+    setInterval(updateDashboardFromDB, 5000); // DBは5秒に1回
+    setInterval(tickRemainingOnly, 1000);     // 残り枚数は1秒に1回更新
+  </script>
+
+</body>
+
+</html>
