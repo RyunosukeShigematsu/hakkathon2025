@@ -1,60 +1,227 @@
-body{
-  font-family: system-ui, -apple-system, sans-serif;
-  max-width: 760px;
-  margin: 32px auto;
-  padding: 0 16px;
-}
-h1{ margin: 0 0 16px; }
-.card{
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  padding: 16px;
-}
-.row{ display: grid; gap: 10px; }
-label{ font-size: 14px; opacity: .8; }
-input, select{
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-}
-button, .btn{
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  background: white;
-  cursor: pointer;
-  text-align: center;
-  display: inline-block;
-}
-button.primary, .btn.primary{
-  border-color: #111;
-}
-button.secondary, .btn.secondary{
-  opacity: .85;
-}
-.toolbar{ display:flex; gap:10px; flex-wrap: wrap; margin-top: 12px; }
-.grid{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-@media (max-width: 700px){
-  .grid{ grid-template-columns: 1fr; }
-}
-.coupon{
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  padding: 12px;
-}
-.badges{ display:flex; gap:6px; flex-wrap: wrap; margin-top: 6px; }
-.badge{
-  border: 1px solid #eee;
-  border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 12px;
-  opacity: .9;
-}
-.muted{ opacity: .75; }
-hr{ border:none; border-top: 1px solid #eee; margin: 14px 0; }
-a{ color: inherit; }
-.msg{ color:#b00020; }
+/* =========================================
+   中野レンガ坂：路地裏レトロ・モダン（赤統一Ver.）
+   ========================================= */
+
+   :root {
+    --bg-color: #fdfaf2;           /* 温かみのある紙のような背景 */
+    --card-bg: #ffffff;
+    --primary-color: #a63d2d;      /* 統一したレンガ色 */
+    --primary-shadow: #8b2a1e;     /* ボタンの立体感用 */
+    --secondary-color: #6d4c41;    /* 落ち着いたブラウン */
+    --accent-yellow: #f9d423;      /* メニューの鳥の黄色 */
+    --text-main: #332c2b;
+    --text-muted: #7d7371;
+    --border-color: #e0dcd0;
+    --radius: 16px;
+    --shadow: 0 4px 12px rgba(166, 61, 45, 0.08);
+  }
+  
+  body {
+    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    
+    /* --- 淡いレンガパターンの背景 --- */
+    background-color: #f2ede4;
+    background-image: 
+      linear-gradient(335deg, rgba(166, 61, 45, 0.06) 23px, transparent 23px),
+      linear-gradient(155deg, rgba(166, 61, 45, 0.03) 23px, transparent 23px),
+      linear-gradient(335deg, rgba(166, 61, 45, 0.06) 23px, transparent 23px),
+      linear-gradient(155deg, rgba(166, 61, 45, 0.03) 23px, transparent 23px);
+    background-size: 58px 58px;
+    background-position: 0px 2px, 4px 35px, 29px 31px, 34px 6px;
+  
+    color: var(--text-main);
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
+    line-height: 1.6;
+  }
+  
+  h1 {
+    font-size: 24px;
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--accent-yellow);
+    display: table;
+    margin-left: auto;
+    margin-right: auto;
+    padding-bottom: 4px;
+    text-shadow: 1px 1px 0px white;
+  }
+  
+  h2 {
+    font-size: 18px;
+    margin: 20px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary-color);
+  }
+  
+  h2::before {
+    content: "";
+    display: inline-block;
+    width: 4px;
+    height: 18px;
+    background-color: var(--primary-color);
+    border-radius: 2px;
+  }
+  
+  /* --- カードデザイン --- */
+  .card {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    backdrop-filter: blur(2px);
+  }
+  
+  .row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* --- フォーム要素 --- */
+  label {
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--secondary-color);
+  }
+  
+  input, select {
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 16px;
+    background-color: #fff;
+    transition: border-color 0.2s;
+  }
+  
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+  
+  /* --- ボタンデザイン：すべてレンガ色に統一 --- */
+  button, .btn {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 14px 20px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+  }
+  
+  button.primary, .btn.primary {
+    background-color: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 4px 0 var(--primary-shadow); /* 押し込み感 */
+  }
+  
+  button.primary:active, .btn.primary:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--primary-shadow);
+  }
+  
+  button.secondary, .btn.secondary {
+    background-color: #fff;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+  }
+  
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  
+  /* --- クーポン一覧 --- */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .coupon {
+    background: #fff;
+    border: 2px dashed var(--primary-color);
+    border-radius: var(--radius);
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+  
+  .coupon:hover {
+    transform: scale(1.02);
+  }
+  
+  .coupon strong {
+    color: var(--primary-color);
+    font-size: 18px;
+    display: block;
+    margin-bottom: 8px;
+  }
+  
+  /* 画像コンテナ */
+  .coupon .image-placeholder {
+    margin: 12px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f8f8f8;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #eee;
+  }
+  
+  /* --- バッジ --- */
+  .badge {
+    background-color: var(--accent-yellow);
+    color: var(--text-main);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  /* --- オーバーレイ --- */
+  #overlay > div {
+    border: 4px solid var(--accent-yellow);
+  }
+  
+  #ovCode {
+    color: var(--primary-color);
+    font-family: 'Courier New', Courier, monospace;
+  }
+  
+  /* --- チェックリスト (receipt.html) --- */
+  #menuChecklist label {
+    transition: background-color 0.2s;
+    border-radius: 8px;
+    padding: 10px;
+  }
+  
+  #menuChecklist label:hover {
+    background-color: #fff9e6;
+  }
+  
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary-color);
+  }

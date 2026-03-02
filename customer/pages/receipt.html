@@ -56,54 +56,124 @@
     // ===== マスタ（デモ用）=====
     // 店舗は固定5つ。各店舗にメニュー5つ（価格つき）。
     const STORE_MENU_MASTER = {
-      "ren-ga-ramen": {
-        storeName: "レンガ坂ラーメン",
+      "ren-ga-meat": {
+        storeName: "手しおご飯 玄", // 画像のタイトル「お肉の定食」より
         menus: [
-          { id: "ramen_shoyu", name: "醤油ラーメン", price: 980 },
-          { id: "ramen_miso", name: "味噌ラーメン", price: 1050 },
-          { id: "tsukemen", name: "つけ麺", price: 1200 },
-          { id: "gyoza_set", name: "餃子セット", price: 450 },
-          { id: "chashu", name: "チャーシュー麺", price: 1450 }
+          // 鶏肉料理
+          { id: "chicken_katsu", name: "やわらかチキンカツ定食", price: 1200 },
+          { id: "chicken_ankake", name: "揚げ鶏のあんかけ定食", price: 1230 },
+          { id: "chicken_mizore", name: "チキンのみぞれ煮定食", price: 1220 },
+          { id: "chicken_nanban", name: "手作りタルタルのやわらかチキン南蛮定食", price: 1250 },
+          { id: "chicken_kurozu", name: "鶏肉と野菜の黒酢あん定食", price: 1280 },
+          { id: "chicken_tomato", name: "五種の野菜とチキンのトマト煮定食", price: 1320 },
+          { id: "chicken_saute", name: "青唐辛子味噌のチキンソテー定食", price: 1280 },
+
+          // 豚肉料理
+          { id: "pork_shogayaki", name: "玉ねぎたっぷり豚生姜焼き定食", price: 1380 },
+          { id: "pork_chops", name: "ごはんがすすむポークチャップ定食", price: 1480 },
+          { id: "pork_tonkatsu", name: "厚切り三元豚のロースとんかつ定食", price: 1420 },
+          { id: "pork_oroshi_tonkatsu", name: "厚切り三元豚のロースおろしとんかつ定食", price: 1520 },
+          { id: "pork_kakuni", name: "とろ〜り豚の角煮定食", price: 1500 },
+
+          // ハンバーグ
+          { id: "hamburg_oroshi", name: "和風おろしハンバーグ定食", price: 1520 },
+          { id: "hamburg_egg", name: "目玉焼のせおふくろさんのハンバーグ定食", price: 1520 },
+          { id: "hamburg_tomato", name: "特製トマト煮込みハンバーグ定食", price: 1520 },
+
+          // 煮魚・炭火焼
+          { id: "fish_nitsuke", name: "スケソウダラの煮つけ(醤油味)定食", price: 1280 }, //
+          { id: "fish_hokke", name: "しまほっけの炭火焼定食(カボチャ煮付)", price: 1550 }, //
+          { id: "fish_kamasu", name: "山陰沖産カマスの開き炭火焼定食(カボチャ煮付)", price: 1450 }, //
+          { id: "fish_katsu", name: "バチまぐろのカツ定食", price: 1650 }, //
+
+          // 漬け・丼
+          { id: "fish_zuke_teishoku", name: "漬まぐろ定食", price: 1600 }, //
+          { id: "fish_zuke_don", name: "漬まぐろのばくだん丼", price: 1350 }
         ]
       },
-      "ren-ga-cafe": {
-        storeName: "レンガ坂カフェ",
+      "ren-ga-spanish": {
+        storeName: "スペインバル siono",
         menus: [
-          { id: "cafelatte", name: "カフェラテ", price: 520 },
-          { id: "tea_cake", name: "紅茶＋ケーキセット", price: 980 },
-          { id: "french_toast", name: "フレンチトースト", price: 980 },
-          { id: "lunch_plate", name: "ランチプレート", price: 1380 },
-          { id: "parfait", name: "季節のパフェ", price: 1280 }
+          // 冷菜・タパス
+          { id: "spanish_uni_pudding", name: "殻付き濃厚ウニプリン（2個）", price: 980 },
+          { id: "spanish_potato_salad", name: "ボケリア特製ポテトサラダ", price: 680 },
+          { id: "spanish_pan_con_tomate", name: "パンコントマテ", price: 550 },
+          { id: "spanish_olives", name: "オリーブのマリネ", price: 480 },
+          { id: "spanish_pickles", name: "季節野菜のピクルス", price: 500 },
+
+          // 温菜・アヒージョ
+          { id: "spanish_tortilla", name: "トルティージャ（スペイン風オムレツ）", price: 750 },
+          { id: "spanish_shrimp_ajillo", name: "海老とマッシュルームのアヒージョ", price: 950 },
+          { id: "spanish_french_fries", name: "ボケリア特製ポテトフライ", price: 650 },
+
+          // メイン・パエリア
+          { id: "spanish_paella_seafood", name: "魚介たっぷりのシーフードパエリア", price: 2400 },
+          { id: "spanish_paella_squid_ink", name: "漆黒のイカ墨パエリア", price: 2200 },
+          { id: "spanish_iberico_steak", name: "イベリコ豚の肩ロースステーキ", price: 1850 },
+
+          // 生ハム・チーズ
+          { id: "spanish_jamon_serrano", name: "ハモンセラーノ（スペイン産生ハム）", price: 1200 },
+          { id: "spanish_cheese_platter", name: "スペイン産チーズの盛り合わせ", price: 1350 }
         ]
       },
-      "ren-ga-izakaya": {
-        storeName: "レンガ坂居酒屋",
+      "ren-ga-italian": {
+        storeName: "ピッコロピッコロ",
         menus: [
-          { id: "beer", name: "生ビール", price: 580 },
-          { id: "karaage", name: "唐揚げ", price: 650 },
-          { id: "sashimi", name: "刺身盛り合わせ", price: 1680 },
-          { id: "yakitori", name: "焼き鳥盛り", price: 980 },
-          { id: "nomihodai", name: "飲み放題コース", price: 2200 }
+          { id: "siono_cheese", name: "吉田牧場のカチョカバロ（グリル）", price: 800 },
+          { id: "siono_basashi", name: "熊本より直送の馬刺3種盛", price: 1500 },
+          { id: "siono_ham_salami", name: "生ハム・サラミ盛り合わせ", price: 800 },
+          { id: "siono_stew", name: "牛すじのトマトソース煮込み", price: 650 },
+          { id: "siono_egg", name: "ベーコンとポテトの玉子焼き", price: 600 },
+          { id: "siono_macaroni", name: "マカロニサラダ（売れ筋）", price: 500 },
+          { id: "siono_taramo", name: "タラモサラダ", price: 500 },
+          { id: "siono_chicken", name: "スパイシー手羽フライ（3本）", price: 550 }
         ]
       },
-      "ren-ga-sushi": {
-        storeName: "レンガ坂すし",
+      "ren-ga-special": {
+        storeName: "青二才",
         menus: [
-          { id: "nigiri10", name: "握り10貫", price: 2200 },
-          { id: "kaisendon", name: "海鮮丼", price: 1580 },
-          { id: "makimono", name: "巻物セット", price: 980 },
-          { id: "chawanmushi", name: "茶碗蒸し", price: 480 },
-          { id: "jyou_nigiri", name: "特上握り", price: 3200 }
+          // 本日のおすすめ
+          { id: "sp_ho_ren_so", name: "白身魚の揚げ出し 柚子胡椒あんかけ", price: 680 },
+          { id: "sp_kurage", name: "くらげと胡麻のピリ辛冷菜", price: 780 },
+          { id: "sp_shirasu", name: "釜揚げしらすのサラダ", price: 780 },
+          { id: "sp_fresh_onion", name: "新玉ねぎと生ハムのカルパッチョ", price: 850 },
+          { id: "sp_asari", name: "あさりと春キャベツの酒蒸し", price: 850 },
+          { id: "sp_katsuo", name: "初カツオのタタキ ポン酢和え", price: 980 },
+          { id: "sp_beef_stew", name: "トロトロ牛すじのデミ煮込み", price: 850 },
+
+          // 期間限定特別メニュー（中野道×福島県）
+          { id: "sp_fukushima_pork", name: "麓山高原豚の西京焼きと完熟ポテトサラダ", price: 750 },
+          { id: "sp_fukushima_vege", name: "大なめこと生木くらげの和風ポン酢和え", price: 450 },
+          { id: "sp_fukushima_dessert", name: "メフレア（梨）と安子ヶ島アイス", price: 550 }
         ]
       },
-      "ren-ga-bakery": {
-        storeName: "レンガ坂ベーカリー",
+      "ren-ga-organico": {
+        storeName: "レンガ坂 オルガニコ",
         menus: [
-          { id: "croissant", name: "クロワッサン", price: 260 },
-          { id: "anpan", name: "あんぱん", price: 220 },
-          { id: "sandwich", name: "サンドイッチ", price: 520 },
-          { id: "set", name: "パン＋ドリンクセット", price: 680 },
-          { id: "shokupan", name: "食パン（1斤）", price: 420 }
+          // 冷菜
+          { id: "org_carrot_rape", name: "キャロットラペ", price: 480 },
+          { id: "org_pickles", name: "産直野菜のピクルス", price: 580 },
+          { id: "org_tomato_stew", name: "野菜のトマト煮込み", price: 580 },
+          { id: "org_potato_salad", name: "ポテトサラダ", price: 580 },
+          { id: "org_mushroom_marine", name: "色々きのこのマリネ", price: 580 },
+          { id: "org_pate", name: "田舎風！豚肉のパテ", price: 880 },
+
+          // 温菜
+          { id: "org_mash_potato", name: "マッシュポテト", price: 480 },
+          { id: "org_mackerel_smoke", name: "サバの自家製スモーク", price: 780 },
+          { id: "org_sausage", name: "自家製ソーセージ", price: 780 },
+
+          // パスタ
+          { id: "org_pasta_ragout", name: "豚肉or鶏肉のラグーパスタ", price: 1180 },
+          { id: "org_pasta_bolognese", name: "自家製！ボロネーゼパスタ", price: 1180 },
+
+          // カレー・グラタン
+          { id: "org_chicken_masala", name: "シェフ特製！スパイシーチキンマサラ", price: 580 },
+          { id: "org_oyster_gratin", name: "瀬戸内産牡蠣のスープグラタン", price: 980 },
+
+          // デザート
+          { id: "org_cheesecake", name: "ベイクドチーズケーキ", price: 580 },
+          { id: "org_gateau_chocolat", name: "ガトーショコラ", price: 580 }
         ]
       }
     };
