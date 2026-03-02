@@ -148,26 +148,34 @@
     margin-top: 16px;
   }
   
-  /* --- クーポン一覧 --- */
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .coupon {
-    background: #fff;
-    border: 2px dashed var(--primary-color);
-    border-radius: var(--radius);
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s;
-  }
-  
-  .coupon:hover {
-    transform: scale(1.02);
-  }
+  /* --- クーポン一覧（ホバー挙動の修正） --- */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.coupon {
+  background: #fff;
+  border: 2px dashed var(--primary-color);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  /* transition: transform 0.2s;  ←不要なので削除 */
+}
+
+/* ホバー時の拡大（変な挙動）を削除 */
+.coupon:hover {
+  transform: none; /* 拡大を無効化 */
+  box-shadow: 0 2px 8px rgba(166, 61, 45, 0.1); /* ほんの少しだけ影を濃くして「触れる」感だけ出す */
+}
+
+/* 候補を「これにする」ボタンの押し心地を強化 */
+.selectBtn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--primary-shadow);
+}
   
   .coupon strong {
     color: var(--primary-color);
