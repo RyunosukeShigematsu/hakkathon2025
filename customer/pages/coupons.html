@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -24,7 +25,12 @@
     requireLoginFromPages();
 
     const API_BASE = "https://shigematsu.nkmr.io/hakkathon2025/server/api";
+
+    // ★候補取得API（planから3件ずつ返す版の user_coupons_candidates.php を想定）
     const API_CANDIDATES = `${API_BASE}/user_coupons_candidates.php`;
+
+    // ★追加：plan作成API（ユーザのretriesを考慮して順番をDBに保存）
+    const API_PLAN_INIT = `${API_BASE}/user_coupon_plan_init.php`;
 
     // ★追加：ログ保存API
     const API_LOG = `${API_BASE}/user_coupon_choice_log_create.php`;
@@ -46,11 +52,45 @@
       }
     }
 
-    async function fetchCandidatesFromDB() {
+    // ★追加：plan init（この画面に入った瞬間に順番を確定してDBへ保存）
+    async function initCouponPlanOrThrow() {
+      const d = loadMyData();
+      const userId = getUserId();
+      const retries = d?.retries ?? 0;
+
+      const body = new URLSearchParams();
+      body.append("user_id", userId);
+      body.append("retries", String(retries));
+
+      const res = await fetch(API_PLAN_INIT, {
+        method: "POST",
+        // headersは付けない（←これ大事）
+        body
+      });
+
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); }
+      catch {
+        console.log("raw response:", text);
+        throw new Error("plan init のサーバ応答が不正です（Network→Response確認）");
+      }
+
+      if (!res.ok || !json?.ok) throw new Error(json?.message ?? "plan init 失敗");
+      return json;
+    }
+
+    // ★変更：候補取得は page を渡す（planの上から順に3件）
+    async function fetchCandidatesFromDB(page) {
+      const userId = getUserId();
+
+      const body = new URLSearchParams();
+      body.append("user_id", userId);
+      body.append("page", String(page));
+
       const res = await fetch(API_CANDIDATES, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({})
+        body
       });
 
       const text = await res.text();
@@ -106,8 +146,9 @@
       return out.slice(0, 3);
     }
 
-    async function buildCandidates() {
-      const items = await fetchCandidatesFromDB();
+    // ★変更：page を受け取る
+    async function buildCandidates(page) {
+      const items = await fetchCandidatesFromDB(page);
 
       const normalized = (items || []).map(x => ({
         id: x.id,
@@ -118,6 +159,8 @@
         isDummy: false
       }));
 
+      // NOTE: planで順番は確定済みだが、UI上の表示順をランダムにしたいならshuffleを残す
+      //       もし「順番通りに見せたい」なら shuffle(...) を外す
       return ensureThree(shuffle(normalized));
     }
 
@@ -143,8 +186,8 @@
 
           <div style="margin:12px 0; border:1px solid #eee; border-radius:12px; height:120px; display:flex; align-items:center; justify-content:center; background:#fafafa; color:#999;">
             ${c.imageUrl
-              ? `<img src="${c.imageUrl}" style="max-width:100%; max-height:100%; border-radius:12px;">`
-              : `No Image`}
+          ? `<img src="${c.imageUrl}" style="max-width:100%; max-height:100%; border-radius:12px;">`
+          : `No Image`}
           </div>
 
           <div class="muted">対象メニュー: <strong>${c.menuName}</strong></div>
@@ -166,7 +209,7 @@
           const picked = candidates.find(c => String(c.id) === String(id));
           if (!picked) return;
 
-          // ★追加：ログ送信（選択）
+          // ★ログ送信（選択）
           const userId = getUserId();
           const shownIds = candidates.filter(x => !x.isDummy).map(x => x.id);
           sendChoiceLog(userId, shownIds, picked.id);
@@ -190,7 +233,13 @@
 
     async function init() {
       try {
-        const candidates = await buildCandidates();
+        // ★追加：この画面に入った瞬間にplanを作る（retries考慮）
+        await initCouponPlanOrThrow();
+
+        // ★追加：ページ番号を初期化
+        saveMyData(d => { d.couponPage = 0; return d; });
+
+        const candidates = await buildCandidates(0);
         saveMyData(d => { d.candidates = candidates; return d; });
         render(candidates);
         updateRetryDisplay();
@@ -207,7 +256,7 @@
       try {
         const current = loadMyData()?.candidates ?? [];
 
-        // ★追加：やり直し時のNULLログ送信
+        // ★やり直し時のNULLログ送信
         const userId = getUserId();
         const shownIds = current.filter(x => !x.isDummy).map(x => x.id);
         if (shownIds.length > 0) {
@@ -215,7 +264,12 @@
         }
 
         consumeOneRetryOrThrow();
-        const candidates = await buildCandidates();
+
+        // ★追加：次のページへ
+        const nextPage = (loadMyData()?.couponPage ?? 0) + 1;
+        saveMyData(d => { d.couponPage = nextPage; return d; });
+
+        const candidates = await buildCandidates(nextPage);
         saveMyData(d => { d.candidates = candidates; return d; });
         render(candidates);
         updateRetryDisplay();
@@ -228,4 +282,5 @@
     init();
   </script>
 </body>
+
 </html>
