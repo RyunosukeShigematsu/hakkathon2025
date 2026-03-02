@@ -116,34 +116,64 @@
           { id: "spanish_cheese_platter", name: "スペイン産チーズの盛り合わせ", price: 1350 }
         ]
       },
-      "ren-ga-izakaya": {
-        storeName: "レンガ坂居酒屋",
+      "ren-ga-italian": {
+        storeName: "ピッコロピッコロ",
         menus: [
-          { id: "beer", name: "生ビール", price: 580 },
-          { id: "karaage", name: "唐揚げ", price: 650 },
-          { id: "sashimi", name: "刺身盛り合わせ", price: 1680 },
-          { id: "yakitori", name: "焼き鳥盛り", price: 980 },
-          { id: "nomihodai", name: "飲み放題コース", price: 2200 }
+          { id: "siono_cheese", name: "吉田牧場のカチョカバロ（グリル）", price: 800 },
+          { id: "siono_basashi", name: "熊本より直送の馬刺3種盛", price: 1500 },
+          { id: "siono_ham_salami", name: "生ハム・サラミ盛り合わせ", price: 800 },
+          { id: "siono_stew", name: "牛すじのトマトソース煮込み", price: 650 },
+          { id: "siono_egg", name: "ベーコンとポテトの玉子焼き", price: 600 },
+          { id: "siono_macaroni", name: "マカロニサラダ（売れ筋）", price: 500 },
+          { id: "siono_taramo", name: "タラモサラダ", price: 500 },
+          { id: "siono_chicken", name: "スパイシー手羽フライ（3本）", price: 550 }
         ]
       },
-      "ren-ga-sushi": {
-        storeName: "レンガ坂すし",
+      "ren-ga-special": {
+        storeName: "青二才",
         menus: [
-          { id: "nigiri10", name: "握り10貫", price: 2200 },
-          { id: "kaisendon", name: "海鮮丼", price: 1580 },
-          { id: "makimono", name: "巻物セット", price: 980 },
-          { id: "chawanmushi", name: "茶碗蒸し", price: 480 },
-          { id: "jyou_nigiri", name: "特上握り", price: 3200 }
+          // 本日のおすすめ
+          { id: "sp_ho_ren_so", name: "白身魚の揚げ出し 柚子胡椒あんかけ", price: 680 },
+          { id: "sp_kurage", name: "くらげと胡麻のピリ辛冷菜", price: 780 },
+          { id: "sp_shirasu", name: "釜揚げしらすのサラダ", price: 780 },
+          { id: "sp_fresh_onion", name: "新玉ねぎと生ハムのカルパッチョ", price: 850 },
+          { id: "sp_asari", name: "あさりと春キャベツの酒蒸し", price: 850 },
+          { id: "sp_katsuo", name: "初カツオのタタキ ポン酢和え", price: 980 },
+          { id: "sp_beef_stew", name: "トロトロ牛すじのデミ煮込み", price: 850 },
+
+          // 期間限定特別メニュー（中野道×福島県）
+          { id: "sp_fukushima_pork", name: "麓山高原豚の西京焼きと完熟ポテトサラダ", price: 750 },
+          { id: "sp_fukushima_vege", name: "大なめこと生木くらげの和風ポン酢和え", price: 450 },
+          { id: "sp_fukushima_dessert", name: "メフレア（梨）と安子ヶ島アイス", price: 550 }
         ]
       },
-      "ren-ga-bakery": {
-        storeName: "レンガ坂ベーカリー",
+      "ren-ga-organico": {
+        storeName: "レンガ坂 オルガニコ",
         menus: [
-          { id: "croissant", name: "クロワッサン", price: 260 },
-          { id: "anpan", name: "あんぱん", price: 220 },
-          { id: "sandwich", name: "サンドイッチ", price: 520 },
-          { id: "set", name: "パン＋ドリンクセット", price: 680 },
-          { id: "shokupan", name: "食パン（1斤）", price: 420 }
+          // 冷菜
+          { id: "org_carrot_rape", name: "キャロットラペ", price: 480 },
+          { id: "org_pickles", name: "産直野菜のピクルス", price: 580 },
+          { id: "org_tomato_stew", name: "野菜のトマト煮込み", price: 580 },
+          { id: "org_potato_salad", name: "ポテトサラダ", price: 580 },
+          { id: "org_mushroom_marine", name: "色々きのこのマリネ", price: 580 },
+          { id: "org_pate", name: "田舎風！豚肉のパテ", price: 880 },
+
+          // 温菜
+          { id: "org_mash_potato", name: "マッシュポテト", price: 480 },
+          { id: "org_mackerel_smoke", name: "サバの自家製スモーク", price: 780 },
+          { id: "org_sausage", name: "自家製ソーセージ", price: 780 },
+
+          // パスタ
+          { id: "org_pasta_ragout", name: "豚肉or鶏肉のラグーパスタ", price: 1180 },
+          { id: "org_pasta_bolognese", name: "自家製！ボロネーゼパスタ", price: 1180 },
+
+          // カレー・グラタン
+          { id: "org_chicken_masala", name: "シェフ特製！スパイシーチキンマサラ", price: 580 },
+          { id: "org_oyster_gratin", name: "瀬戸内産牡蠣のスープグラタン", price: 980 },
+
+          // デザート
+          { id: "org_cheesecake", name: "ベイクドチーズケーキ", price: 580 },
+          { id: "org_gateau_chocolat", name: "ガトーショコラ", price: 580 }
         ]
       }
     };
