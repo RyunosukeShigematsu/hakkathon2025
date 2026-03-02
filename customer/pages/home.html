@@ -15,7 +15,7 @@
   <div class="card">
     <div class="toolbar">
       <a class="btn primary" href="receipt.html">レシート登録</a>
-          <button class="btn secondary" id="editTagsBtn">タグを修正</button>
+      <button class="btn secondary" id="editTagsBtn">タグを修正</button>
     </div>
 
     <hr />
@@ -395,17 +395,9 @@
               <div class="coupon">
                 <strong>${c.shopName}</strong>
 
-                <div style="margin:12px 0; border:1px solid #eee;
-                            border-radius:12px; height:120px;
-                            display:flex; align-items:center;
-                            justify-content:center;
-                            background:#fafafa; color:#999;">
-                  ${c.imageUrl
-              ? `<img src="${c.imageUrl}"
-                           style="max-width:100%; max-height:100%;
-                                  border-radius:12px;">`
-              : `No Image`}
-                </div>
+                <div class="image-placeholder">
+  ${c.imageUrl ? `<img src="${c.imageUrl}" alt="">` : `<span class="muted">No Image</span>`}
+</div>
 
                 <div class="muted">
                   対象メニュー: <strong>${c.menuName}</strong>

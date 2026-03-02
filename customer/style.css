@@ -183,20 +183,7 @@
     display: block;
     margin-bottom: 8px;
   }
-  
-  /* 画像コンテナ */
-  .coupon .image-placeholder {
-    margin: 12px 0;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #f8f8f8;
-    height: 140px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #eee;
-  }
-  
+    
   /* --- バッジ --- */
   .badge {
     background-color: var(--accent-yellow);
@@ -234,19 +221,21 @@
     accent-color: var(--primary-color);
   }
 
-.coupon .image-placeholder{
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 12px;
+.coupon .image-placeholder {
+  margin: 12px 0;
+  border-radius: 14px;
   overflow: hidden;
-  background: #f8f8f8;
+  aspect-ratio: 1 / 1;   /* 正方形 */
+  width: 100%;
   border: 1px solid #eee;
+  background: #f8f8f8;
 }
 
-.coupon .image-placeholder img{
+.coupon .image-placeholder img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover;          /* 余白なし */
+  object-position: center 40%; /* 少し上寄りに */
   display: block;
 }
 
