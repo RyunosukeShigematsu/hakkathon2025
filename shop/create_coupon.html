@@ -59,8 +59,9 @@
       <input id="targetAgeMax" type="number" placeholder="最大 (99)">
     </div>
 
-    <label>関連タグ（カンマ区切り）</label>
-    <input id="tags" placeholder="例: 学生,ランチ,ドリンク">
+    <label>関連タグ（複数選択）</label>
+<div id="tagsBox" class="tags-box"></div>
+<p class="muted">※複数選択OK</p>
 
     <label>発行枚数（在庫上限）</label>
     <input id="totalStock" type="number" placeholder="例: 50">
@@ -87,6 +88,55 @@
       try { return JSON.parse(localStorage.getItem(KEY_SHOP_SESSION) || "null"); }
       catch { return null; }
     }
+
+    // タグ候補（カテゴリ分けしてるけど、送るのは文字列だけ）
+const TAG_GROUPS = {
+  "ジャンル": ["和食","洋食","中華","イタリアン","焼肉","居酒屋","カフェ","スイーツ","エスニック","定食系","鉄板系","肉料理中心"],
+  "シーン": ["ひとり向け","友達と","デート向き","ファミリー向け","学生向け","社会人向け","飲み向き","ランチ向き","ディナー向き","二次会向き"],
+  "味": ["がっつり","軽め","こってり","あっさり","濃厚","さっぱり","辛い","甘い","スパイシー","チーズ系","にんにく系","魚介系"],
+  "特徴": ["コスパ重視","ご褒美系","ボリューム満点","ヘルシー志向","セット充実","アルコール充実"]
+};
+
+function renderTags() {
+  const box = document.getElementById("tagsBox");
+  box.innerHTML = "";
+
+  for (const [group, tags] of Object.entries(TAG_GROUPS)) {
+    // グループ見出し（小さめ）
+    const h = document.createElement("div");
+    h.className = "muted";
+    h.style.width = "100%";
+    h.style.marginTop = "6px";
+    h.textContent = group;
+    box.appendChild(h);
+
+    for (const tag of tags) {
+      const label = document.createElement("label");
+      label.className = "tag-item";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = tag;
+      cb.className = "tagCheck";
+
+      const span = document.createElement("span");
+      span.textContent = tag;
+
+      label.appendChild(cb);
+      label.appendChild(span);
+      box.appendChild(label);
+    }
+  }
+}
+
+function getSelectedTags() {
+  return Array.from(document.querySelectorAll(".tagCheck:checked"))
+    .map(el => el.value);
+}
+
+function resetTags() {
+  document.querySelectorAll(".tagCheck").forEach(el => el.checked = false);
+}
 
     function syncDiscountUI() {
       const type = document.getElementById("discountType").value;
@@ -176,7 +226,7 @@
       const gender = document.getElementById("targetGender").value;
       const ageMin = Number(document.getElementById("targetAgeMin").value || 0);
       const ageMax = Number(document.getElementById("targetAgeMax").value || 99);
-      const tags = document.getElementById("tags").value.split(",").map(s => s.trim()).filter(Boolean);
+      const tags = getSelectedTags();
       const totalStock = Number(document.getElementById("totalStock").value);
 
       if (!targetId || !totalStock) {
@@ -232,7 +282,7 @@
         document.getElementById("targetGender").value = "all";
         document.getElementById("targetAgeMin").value = "";
         document.getElementById("targetAgeMax").value = "";
-        document.getElementById("tags").value = "";
+        resetTags();
         document.getElementById("totalStock").value = "";
 
       } catch (e) {
@@ -244,6 +294,7 @@
     // init
     syncDiscountUI();
     loadTargets();
+    renderTags();
   </script>
 </body>
 
