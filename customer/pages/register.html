@@ -32,19 +32,9 @@
       <option value="other">その他</option>
     </select>
 
-    <label>好きなジャンル（複数選択可）</label>
-    <div id="prefContainer"
-      style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #ddd; padding: 12px; border-radius: 10px;">
-      <label><input type="checkbox" name="pref" value="バル"> バル</label>
-      <label><input type="checkbox" name="pref" value="カフェ"> カフェ</label>
-      <label><input type="checkbox" name="pref" value="イタリアン"> イタリアン</label>
-      <label><input type="checkbox" name="pref" value="居酒屋"> 居酒屋</label>
-      <label><input type="checkbox" name="pref" value="スイーツ"> スイーツ</label>
-      <label><input type="checkbox" name="pref" value="お酒"> お酒</label>
-    </div>
-
-    <label>メモ（任意）</label>
-    <input id="memo" placeholder="例: 中野によく来ます">
+    <label>タグ（複数選択）</label>
+    <div id="tagsBox" class="tags-box"></div>
+    <p class="muted">※複数選択OK</p>
 
     <div class="toolbar">
       <button class="primary" id="saveBtn">登録する</button>
@@ -59,8 +49,47 @@
     // ★登録API（PHP）に送る
     const API_REGISTER = "https://shigematsu.nkmr.io/hakkathon2025/server/api/user_register.php";
 
-    function getCheckedPrefs() {
-      return [...qsa('input[name="pref"]:checked')].map(el => el.value);
+    // クーポンと同じタグ一覧
+    const TAG_GROUPS = {
+      "ジャンル": ["和食", "洋食", "中華", "イタリアン", "焼肉", "居酒屋", "カフェ", "スイーツ", "エスニック", "定食系", "鉄板系", "肉料理中心"],
+      "シーン": ["ひとり向け", "友達と", "デート向き", "ファミリー向け", "学生向け", "社会人向け", "飲み向き", "ランチ向き", "ディナー向き", "二次会向き"],
+      "味": ["がっつり", "軽め", "こってり", "あっさり", "濃厚", "さっぱり", "辛い", "甘い", "スパイシー", "チーズ系", "にんにく系", "魚介系"],
+      "特徴": ["コスパ重視", "ご褒美系", "ボリューム満点", "ヘルシー志向", "セット充実", "アルコール充実"]
+    };
+
+    function renderTags() {
+      const box = document.getElementById("tagsBox");
+      box.innerHTML = "";
+
+      for (const [group, tags] of Object.entries(TAG_GROUPS)) {
+        const h = document.createElement("div");
+        h.className = "muted";
+        h.style.width = "100%";
+        h.style.marginTop = "6px";
+        h.textContent = group;
+        box.appendChild(h);
+
+        for (const tag of tags) {
+          const label = document.createElement("label");
+          label.className = "tag-item";
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.value = tag;
+          cb.className = "tagCheck";
+
+          const span = document.createElement("span");
+          span.textContent = tag;
+
+          label.appendChild(cb);
+          label.appendChild(span);
+          box.appendChild(label);
+        }
+      }
+    }
+
+    function getSelectedTags() {
+      return Array.from(document.querySelectorAll(".tagCheck:checked")).map(el => el.value);
     }
 
     function setMsg(text) {
@@ -76,14 +105,13 @@
       const ageRaw = qs("#age").value;
       const age = ageRaw === "" ? null : Number(ageRaw);
       const gender = qs("#gender").value;
-      const memo = qs("#memo").value.trim();
-      const preferences = getCheckedPrefs();
+
+      const tags = getSelectedTags(); // ★ここが新しい
 
       if (!userId) { alert("ユーザーIDを入力してください"); return; }
       if (!password || password.length < 4) { alert("パスワードは4文字以上にしてください"); return; }
       if (age !== null && (Number.isNaN(age) || age < 0 || age > 120)) { alert("年齢の値が不正です"); return; }
 
-      // 二重送信防止
       const btn = qs("#saveBtn");
       btn.disabled = true;
       btn.style.opacity = 0.6;
@@ -99,8 +127,7 @@
             name,
             age,
             gender,
-            preferences,
-            memo
+            tags   // ★preferencesじゃなくtags
           })
         });
 
@@ -113,7 +140,6 @@
           return;
         }
 
-        // 登録成功 → そのままログイン画面へ
         location.href = "../index.html";
       } catch (e) {
         console.error(e);
@@ -124,6 +150,9 @@
         btn.style.opacity = 1;
       }
     });
+
+    // init
+    renderTags();
   </script>
 </body>
 

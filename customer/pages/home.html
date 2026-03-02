@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ja">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -14,6 +15,7 @@
   <div class="card">
     <div class="toolbar">
       <a class="btn primary" href="receipt.html">レシート登録</a>
+          <button class="btn secondary" id="editTagsBtn">タグを修正</button>
     </div>
 
     <hr />
@@ -27,8 +29,7 @@
   </div>
 
   <!-- ===== オーバーレイ ===== -->
-  <div id="overlay"
-       style="position:fixed; inset:0; background:rgba(0,0,0,.5);
+  <div id="overlay" style="position:fixed; inset:0; background:rgba(0,0,0,.5);
               display:none; align-items:center; justify-content:center;
               padding:16px; z-index:9999;">
     <div style="background:white; border-radius:16px;
@@ -49,8 +50,7 @@
       <!-- コード表示 -->
       <div id="ovStageCode" style="display:none; margin-top:14px;">
         <div class="muted">店員さんにこのコードを見せてください</div>
-        <div id="ovCode"
-             style="font-size:34px; font-weight:900;
+        <div id="ovCode" style="font-size:34px; font-weight:900;
                     letter-spacing:2px; margin-top:8px;"></div>
         <div class="muted" style="margin-top:6px;">
           残り <span id="ovSec">3:00</span>
@@ -63,148 +63,333 @@
     </div>
   </div>
 
+  <div id="tagOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,.5);
+            display:none; align-items:center; justify-content:center;
+            padding:16px; z-index:10000;">
+    <div style="background:white; border-radius:16px;
+              width:min(520px, 100%); padding:16px;">
+
+      <div style="font-weight:900; font-size:16px;">タグを修正</div>
+      <div class="muted" style="margin-top:6px;">複数選択できます</div>
+
+      <div id="userTagsBox" style="margin-top:12px;"></div>
+
+      <div class="toolbar" style="margin-top:12px;">
+        <button class="primary" id="tagSaveBtn">完了（保存）</button>
+        <button class="secondary" id="tagCancelBtn">キャンセル</button>
+      </div>
+
+      <p class="muted" id="tagMsg" style="margin-top:10px;"></p>
+    </div>
+  </div>
+
   <script src="../app.js"></script>
 
   <script>
-  window.addEventListener("DOMContentLoaded", () => {
+    window.addEventListener("DOMContentLoaded", () => {
 
-    requireLoginFromPages();
+      requireLoginFromPages();
 
-    const API_USER_COUPONS =
-      "https://shigematsu.nkmr.io/hakkathon2025/server/api/user_coupons_by_ids.php";
+      const API_USER_COUPONS =
+        "https://shigematsu.nkmr.io/hakkathon2025/server/api/user_coupons_by_ids.php";
 
-    const me = getUserId();
-    if (me) document.getElementById("who").textContent = `ログイン中: ${me}`;
+      const me = getUserId();
+      if (me) document.getElementById("who").textContent = `ログイン中: ${me}`;
 
-    let currentCoupon = null;
-    let timerId = null;
+      let currentCoupon = null;
+      let timerId = null;
 
-    /* =============================
-       クーポン削除（ID方式）
-    ============================= */
-    function removeCouponById(couponId) {
-      saveMyData(d => {
-        const ids = d.selectedCouponIds ?? [];
-        d.selectedCouponIds = ids.filter(id => String(id) !== String(couponId));
-        return d;
-      });
-      renderOwned();
-    }
+      /* =============================
+         タグ編集（ユーザーtags）
+      ============================= */
+      const API_USER_TAGS_GET =
+        "https://shigematsu.nkmr.io/hakkathon2025/server/api/user_tags_get.php";
+      const API_USER_TAGS_UPDATE =
+        "https://shigematsu.nkmr.io/hakkathon2025/server/api/user_tags_update.php";
 
-    /* =============================
-       オーバーレイ制御
-    ============================= */
-    function openOverlay(coupon) {
-      currentCoupon = coupon;
+      // クーポン側と同一のタグ一覧（必ず同じにする）
+      const TAG_GROUPS = {
+        "ジャンル": ["和食", "洋食", "中華", "イタリアン", "焼肉", "居酒屋", "カフェ", "スイーツ", "エスニック", "定食系", "鉄板系", "肉料理中心"],
+        "シーン": ["ひとり向け", "友達と", "デート向き", "ファミリー向け", "学生向け", "社会人向け", "飲み向き", "ランチ向き", "ディナー向き", "二次会向き"],
+        "味": ["がっつり", "軽め", "こってり", "あっさり", "濃厚", "さっぱり", "辛い", "甘い", "スパイシー", "チーズ系", "にんにく系", "魚介系"],
+        "特徴": ["コスパ重視", "ご褒美系", "ボリューム満点", "ヘルシー志向", "セット充実", "アルコール充実"]
+      };
 
-      document.getElementById("ovTitle").textContent = coupon.shopName;
-      document.getElementById("ovDesc").textContent =
-        `対象メニュー: ${coupon.menuName} / ${coupon.discountLabel}`;
+      function setTagMsg(t) {
+        const el = document.getElementById("tagMsg");
+        if (el) el.textContent = t || "";
+      }
 
-      document.getElementById("ovStageConfirm").style.display = "block";
-      document.getElementById("ovStageCode").style.display = "none";
-      document.getElementById("overlay").style.display = "flex";
-    }
+      function renderUserTags(selected = []) {
+        const selSet = new Set(selected);
+        const box = document.getElementById("userTagsBox");
+        if (!box) return;
 
-    function closeOverlay() {
-      if (timerId) clearInterval(timerId);
-      timerId = null;
-      document.getElementById("overlay").style.display = "none";
-      currentCoupon = null;
-    }
+        // 中身を作り直す
+        box.innerHTML = "";
+        const wrap = document.createElement("div");
+        wrap.style.display = "flex";
+        wrap.style.flexWrap = "wrap";
+        wrap.style.gap = "8px";
+        wrap.style.padding = "10px";
+        wrap.style.border = "1px solid #ddd";
+        wrap.style.borderRadius = "12px";
+        wrap.style.background = "#fff";
+        box.appendChild(wrap);
 
-    function generateCode() {
-      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      return letters[Math.floor(Math.random()*26)] +
-             letters[Math.floor(Math.random()*26)] +
-             String(Math.floor(Math.random()*100)).padStart(2,"0");
-    }
+        for (const [group, tags] of Object.entries(TAG_GROUPS)) {
+          const h = document.createElement("div");
+          h.className = "muted";
+          h.style.width = "100%";
+          h.style.marginTop = "6px";
+          h.textContent = group;
+          wrap.appendChild(h);
 
-    function startCountdown(code) {
-      document.getElementById("ovStageConfirm").style.display = "none";
-      document.getElementById("ovStageCode").style.display = "block";
-      document.getElementById("ovCode").textContent = code;
+          for (const tag of tags) {
+            const label = document.createElement("label");
+            label.style.display = "flex";
+            label.style.alignItems = "center";
+            label.style.gap = "6px";
+            label.style.padding = "6px 10px";
+            label.style.border = "1px solid #e5e5e5";
+            label.style.borderRadius = "999px";
+            label.style.background = "#fafafa";
+            label.style.cursor = "pointer";
+            label.style.userSelect = "none";
 
-      let sec = 180; // 3:00
-      document.getElementById("ovSec").textContent = "3:00";
+            const cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.value = tag;
+            cb.className = "userTagCheck";
+            cb.checked = selSet.has(tag);
 
-      timerId = setInterval(() => {
-        sec--;
+            const span = document.createElement("span");
+            span.textContent = tag;
 
-        const m = Math.floor(sec / 60);
-        const s = String(sec % 60).padStart(2, "0");
-        document.getElementById("ovSec").textContent = `${m}:${s}`;
+            label.appendChild(cb);
+            label.appendChild(span);
+            wrap.appendChild(label);
+          }
+        }
+      }
 
-        if (sec <= 0) {
-          clearInterval(timerId);
-          timerId = null;
+      function getSelectedUserTags() {
+        return Array.from(document.querySelectorAll(".userTagCheck:checked"))
+          .map(el => el.value);
+      }
 
+      async function openTagOverlay() {
+        const ov = document.getElementById("tagOverlay");
+        if (!ov) {
+          alert("tagOverlay がHTMLにありません");
+          return;
+        }
+        ov.style.display = "flex";
+        setTagMsg("読み込み中…");
+
+        try {
+          const user_id = getUserId();
+          const res = await fetch(API_USER_TAGS_GET, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id })
+          });
+
+          const text = await res.text();
+          let json;
+          try { json = JSON.parse(text); } catch { json = null; }
+
+          if (!json?.ok) {
+            console.log("raw:", text);
+            renderUserTags([]); // 空で表示
+            setTagMsg(json?.message || "取得失敗");
+            return;
+          }
+
+          renderUserTags(json.tags || []);
+          setTagMsg("");
+
+        } catch (e) {
+          console.error(e);
+          renderUserTags([]);
+          setTagMsg("通信エラー");
+        }
+      }
+
+      async function saveUserTags() {
+        setTagMsg("保存中…");
+        try {
+          const user_id = getUserId();
+          const tags = getSelectedUserTags();
+
+          const res = await fetch(API_USER_TAGS_UPDATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id, tags })
+          });
+
+          const text = await res.text();
+          let json;
+          try { json = JSON.parse(text); } catch { json = null; }
+
+          if (!json?.ok) {
+            console.log("raw:", text);
+            setTagMsg(json?.message || "保存失敗");
+            return;
+          }
+
+          setTagMsg("保存しました");
+          setTimeout(() => {
+            document.getElementById("tagOverlay").style.display = "none";
+            setTagMsg("");
+          }, 300);
+
+        } catch (e) {
+          console.error(e);
+          setTagMsg("通信エラー");
+        }
+      }
+
+
+      /* =============================
+         クーポン削除（ID方式）
+      ============================= */
+      function removeCouponById(couponId) {
+        saveMyData(d => {
+          const ids = d.selectedCouponIds ?? [];
+          d.selectedCouponIds = ids.filter(id => String(id) !== String(couponId));
+          return d;
+        });
+        renderOwned();
+      }
+
+      /* =============================
+         オーバーレイ制御
+      ============================= */
+      function openOverlay(coupon) {
+        currentCoupon = coupon;
+
+        document.getElementById("ovTitle").textContent = coupon.shopName;
+        document.getElementById("ovDesc").textContent =
+          `対象メニュー: ${coupon.menuName} / ${coupon.discountLabel}`;
+
+        document.getElementById("ovStageConfirm").style.display = "block";
+        document.getElementById("ovStageCode").style.display = "none";
+        document.getElementById("overlay").style.display = "flex";
+      }
+
+      function closeOverlay() {
+        if (timerId) clearInterval(timerId);
+        timerId = null;
+        document.getElementById("overlay").style.display = "none";
+        currentCoupon = null;
+      }
+
+      function generateCode() {
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        return letters[Math.floor(Math.random() * 26)] +
+          letters[Math.floor(Math.random() * 26)] +
+          String(Math.floor(Math.random() * 100)).padStart(2, "0");
+      }
+
+      function startCountdown(code) {
+        document.getElementById("ovStageConfirm").style.display = "none";
+        document.getElementById("ovStageCode").style.display = "block";
+        document.getElementById("ovCode").textContent = code;
+
+        let sec = 180; // 3:00
+        document.getElementById("ovSec").textContent = "3:00";
+
+        timerId = setInterval(() => {
+          sec--;
+
+          const m = Math.floor(sec / 60);
+          const s = String(sec % 60).padStart(2, "0");
+          document.getElementById("ovSec").textContent = `${m}:${s}`;
+
+          if (sec <= 0) {
+            clearInterval(timerId);
+            timerId = null;
+
+            if (currentCoupon) {
+              removeCouponById(currentCoupon.id);
+            }
+
+            closeOverlay();
+          }
+        }, 1000);
+      }
+
+      /* =============================
+         ボタンイベント
+      ============================= */
+      document.getElementById("ovCancelBtn")
+        .addEventListener("click", closeOverlay);
+
+      document.getElementById("ovCloseBtn")
+        .addEventListener("click", () => {
           if (currentCoupon) {
             removeCouponById(currentCoupon.id);
           }
-
           closeOverlay();
-        }
-      }, 1000);
-    }
-
-    /* =============================
-       ボタンイベント
-    ============================= */
-    document.getElementById("ovCancelBtn")
-      .addEventListener("click", closeOverlay);
-
-    document.getElementById("ovCloseBtn")
-      .addEventListener("click", () => {
-        if (currentCoupon) {
-          removeCouponById(currentCoupon.id);
-        }
-        closeOverlay();
-      });
-
-    document.getElementById("ovUseBtn")
-      .addEventListener("click", () => {
-        if (!currentCoupon) return;
-        const code = generateCode();
-        startCountdown(code);
-      });
-
-    document.getElementById("logoutBtn")
-      .addEventListener("click", () => {
-        logoutDemo();
-        location.href = "../index.html";
-      });
-
-    /* =============================
-       所持クーポン描画（DB参照）
-    ============================= */
-    async function renderOwned() {
-      const data = loadMyData();
-      const ids = data?.selectedCouponIds ?? [];
-
-      if (ids.length === 0) {
-        document.getElementById("owned").innerHTML =
-          `<p class="muted">まだクーポンがありません。</p>`;
-        return;
-      }
-
-      try {
-        const res = await fetch(API_USER_COUPONS, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids })
         });
 
-        const json = await res.json();
-        if (!json.ok) {
+      document.getElementById("ovUseBtn")
+        .addEventListener("click", () => {
+          if (!currentCoupon) return;
+          const code = generateCode();
+          startCountdown(code);
+        });
+
+      document.getElementById("logoutBtn")
+        .addEventListener("click", () => {
+          logoutDemo();
+          location.href = "../index.html";
+        });
+
+      // タグ編集オーバーレイ
+      document.getElementById("editTagsBtn")
+        ?.addEventListener("click", openTagOverlay);
+
+      document.getElementById("tagCancelBtn")
+        ?.addEventListener("click", () => {
+          document.getElementById("tagOverlay").style.display = "none";
+          setTagMsg("");
+        });
+
+      document.getElementById("tagSaveBtn")
+        ?.addEventListener("click", saveUserTags);
+
+      /* =============================
+         所持クーポン描画（DB参照）
+      ============================= */
+      async function renderOwned() {
+        const data = loadMyData();
+        const ids = data?.selectedCouponIds ?? [];
+
+        if (ids.length === 0) {
           document.getElementById("owned").innerHTML =
-            `<p class="muted">取得失敗</p>`;
+            `<p class="muted">まだクーポンがありません。</p>`;
           return;
         }
 
-        const items = json.items ?? [];
+        try {
+          const res = await fetch(API_USER_COUPONS, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids })
+          });
 
-        document.getElementById("owned").innerHTML = `
+          const json = await res.json();
+          if (!json.ok) {
+            document.getElementById("owned").innerHTML =
+              `<p class="muted">取得失敗</p>`;
+            return;
+          }
+
+          const items = json.items ?? [];
+
+          document.getElementById("owned").innerHTML = `
           <div class="row">
             ${items.map(c => `
               <div class="coupon">
@@ -216,10 +401,10 @@
                             justify-content:center;
                             background:#fafafa; color:#999;">
                   ${c.imageUrl
-                    ? `<img src="${c.imageUrl}"
+              ? `<img src="${c.imageUrl}"
                            style="max-width:100%; max-height:100%;
                                   border-radius:12px;">`
-                    : `No Image`}
+              : `No Image`}
                 </div>
 
                 <div class="muted">
@@ -241,24 +426,25 @@
           </div>
         `;
 
-        document.querySelectorAll(".useBtn").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            const coupon = items.find(x => String(x.id) === String(id));
-            if (!coupon) return;
-            openOverlay(coupon);
+          document.querySelectorAll(".useBtn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const id = btn.dataset.id;
+              const coupon = items.find(x => String(x.id) === String(id));
+              if (!coupon) return;
+              openOverlay(coupon);
+            });
           });
-        });
 
-      } catch (e) {
-        document.getElementById("owned").innerHTML =
-          `<p class="muted">通信エラー</p>`;
+        } catch (e) {
+          document.getElementById("owned").innerHTML =
+            `<p class="muted">通信エラー</p>`;
+        }
       }
-    }
 
-    renderOwned();
+      renderOwned();
 
-  });
+    });
   </script>
 </body>
+
 </html>
