@@ -10,7 +10,11 @@
   <link rel="stylesheet" href="../customer/style.css" />
 
   <style>
-    .analysis-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
 
     .top-bar {
       display: flex;
@@ -20,8 +24,16 @@
       gap: 12px;
     }
 
-    .shop-id { font-size: 13px; color: #666; margin-top: 6px; }
-    .muted { color: #666; font-size: 13px; }
+    .shop-id {
+      font-size: 13px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 13px;
+    }
 
     .target-item {
       display: flex;
@@ -34,32 +46,53 @@
       cursor: pointer;
       user-select: none;
     }
-    .target-item:active { transform: scale(0.995); opacity: 0.9; }
 
-    .target-left { text-align: left; flex: 1; min-width: 0; }
-    .target-title {
-      font-weight: 700; font-size: 14px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    .target-item:active {
+      transform: scale(0.995);
+      opacity: 0.9;
     }
-    .target-sub { margin-top: 3px; font-size: 12px; color: #777; }
+
+    .target-left {
+      text-align: left;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .target-title {
+      font-weight: 700;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .target-sub {
+      margin-top: 3px;
+      font-size: 12px;
+      color: #777;
+    }
 
     /* modal */
     .modal-backdrop {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.35);
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
       display: none;
-      align-items: center; justify-content: center;
+      align-items: center;
+      justify-content: center;
       padding: 18px;
       z-index: 9999;
     }
+
     .modal {
       width: min(520px, 100%);
       background: #fff;
       border-radius: 16px;
       border: 1px solid #eee;
       padding: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
     }
+
     .modal-head {
       display: flex;
       justify-content: space-between;
@@ -67,8 +100,19 @@
       gap: 12px;
       margin-bottom: 10px;
     }
-    .modal-title { font-size: 16px; font-weight: 800; margin: 0; line-height: 1.3; }
-    .modal-sub { margin-top: 4px; font-size: 12px; color: #777; }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    .modal-sub {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #777;
+    }
 
     .icon-btn {
       border: 1px solid #eee;
@@ -77,17 +121,35 @@
       padding: 8px 10px;
       cursor: pointer;
     }
-    .icon-btn:active { transform: scale(0.98); }
 
-    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .icon-btn:active {
+      transform: scale(0.98);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
     .kpi {
       background: #f7f7f7;
       border: 1px solid #eee;
       border-radius: 12px;
       padding: 12px;
     }
-    .kpi .label { font-size: 12px; color: #666; }
-    .kpi .value { font-size: 22px; font-weight: 800; margin-top: 4px; }
+
+    .kpi .label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .kpi .value {
+      font-size: 22px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
 
     .bar-wrap {
       background: #eee;
@@ -96,9 +158,21 @@
       overflow: hidden;
       margin-top: 10px;
     }
-    .bar { height: 100%; width: 0%; background: #007aff; transition: width .5s ease; }
 
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: #007aff;
+      transition: width .5s ease;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
     .chip {
       font-size: 12px;
       padding: 4px 10px;
@@ -107,7 +181,11 @@
       background: #fff;
       color: #333;
     }
-    .chip .c { color: #666; margin-left: 6px; }
+
+    .chip .c {
+      color: #666;
+      margin-left: 6px;
+    }
   </style>
 </head>
 
@@ -158,14 +236,30 @@
       <div class="kpi" style="margin-top:10px;">
         <div class="label">選択率（CTR）</div>
         <div id="kpiCtr" class="value">-</div>
-        <div class="bar-wrap"><div id="ctrBar" class="bar"></div></div>
+        <div class="bar-wrap">
+          <div id="ctrBar" class="bar"></div>
+        </div>
       </div>
 
       <div class="kpi" style="margin-top:10px;">
         <div class="label">選択した人の特徴</div>
-        <div id="attrGender" class="muted" style="margin-top:6px;"></div>
-        <div id="attrAge" class="muted" style="margin-top:6px;"></div>
-        <div id="attrTags" style="margin-top:10px;"></div>
+
+        <div class="insight-row">
+          <div class="insight-box">
+            <div class="chart-title">性別</div>
+            <div id="genderDonut"></div>
+          </div>
+
+          <div class="insight-box" style="flex:1;">
+            <div class="chart-title">年齢（分布）</div>
+            <div id="ageStrip"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="chart-title">おすすめターゲット（好みタグ 上位）</div>
+          <div id="tagPills"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -176,7 +270,7 @@
     // 既に動いているカテゴリ一覧API
     const API_TARGETS = "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_targets_list.php";
 
-    // ★今回の集計API（あなたのshop_get_analysis.php）
+    // 集計API
     const API_TARGET_STATS = "https://shigematsu.nkmr.io/hakkathon2025/server/api/shop_get_analysis.php";
 
     function safeParse(raw, fallback) {
@@ -229,7 +323,6 @@
       }
 
       if (!json.ok) {
-        // PHPが返したdetailも見えるようにする
         const msg = json.message || "集計APIエラー";
         const detail = json.detail ? (" / " + JSON.stringify(json.detail)) : "";
         throw new Error(msg + detail);
@@ -266,45 +359,125 @@
       if (e.target === modalBackdrop) closeModal();
     });
 
-    function renderAttr(stats) {
-      const g = stats.genderCounts || {};
+    // ===== 可視化（省スペース版） =====
+    function sumObj(obj) {
+      return Object.values(obj || {}).reduce((a, v) => a + Number(v || 0), 0);
+    }
+
+    function topKey(obj) {
+      let bestK = "unknown", bestV = -1;
+      for (const k in (obj || {})) {
+        const v = Number(obj[k] || 0);
+        if (v > bestV) { bestV = v; bestK = k; }
+      }
+      return bestK;
+    }
+
+    // 視認性のために固定色（CSSに書いてもOK）
+    const G_COL = { male: "#2F80ED", female: "#EB5757", other: "#9B51E0", unknown: "#BDBDBD" };
+    const A_COL = { "-19": "#2D9CDB", "20s": "#27AE60", "30s": "#F2C94C", "40s": "#F2994A", "50+": "#EB5757", "unknown": "#BDBDBD" };
+
+    function renderDonut(elId, counts) {
+      const el = document.getElementById(elId);
+      const total = sumObj(counts);
+      if (!total) { el.innerHTML = "<div class='muted'>データなし</div>"; return; }
+
+      const main = topKey(counts); // 最大の属性
+      const r = 18, cx = 22, cy = 22, stroke = 8;
+      const C = 2 * Math.PI * r;
+
+      const order = ["male", "female", "other", "unknown"];
+      let acc = 0;
+
+      const circles = order.map(k => {
+        const v = Number(counts[k] || 0);
+        const frac = v / total;
+        const dash = frac * C;
+        const offset = C - acc;
+        acc += dash;
+        return `
+        <circle r="${r}" cx="${cx}" cy="${cy}"
+          fill="transparent"
+          stroke="${G_COL[k]}"
+          stroke-width="${stroke}"
+          stroke-dasharray="${dash} ${C - dash}"
+          stroke-dashoffset="${offset}"
+          transform="rotate(-90 ${cx} ${cy})"
+        />`;
+      }).join("");
+
+      el.innerHTML = `
+      <div class="donutWrap">
+        <svg width="44" height="44" viewBox="0 0 44 44" aria-label="gender donut">
+          <circle r="${r}" cx="${cx}" cy="${cy}" fill="transparent" stroke="#eee" stroke-width="${stroke}" />
+          ${circles}
+          <text x="22" y="25" text-anchor="middle" font-size="10" fill="#444" font-weight="700">${main}</text>
+        </svg>
+        <div class="donutText">
+          male ${counts.male || 0} / female ${counts.female || 0}<br/>
+          other ${counts.other || 0} / unk ${counts.unknown || 0}
+        </div>
+      </div>
+    `;
+    }
+
+    function renderAgeStrip(stats) {
+      const el = document.getElementById("ageStrip");
       const a = stats.ageBuckets || {};
-      const tags = stats.topTags || [];
+      const total = Number(stats.selections || 0);
+      if (!total) { el.innerHTML = "<div class='muted'>データなし</div>"; return; }
+
+      const order = ["-19", "20s", "30s", "40s", "50+", "unknown"];
+      const segs = order.map(k => {
+        const v = Number(a[k] || 0);
+        const w = Math.max(0, (v / total) * 100);
+        return `<div class="seg" style="width:${w}%; background:${A_COL[k]};"></div>`;
+      }).join("");
+
+      const legend = order.map(k => {
+        const v = Number(a[k] || 0);
+        return `<span class="leg"><span class="dot" style="background:${A_COL[k]}"></span>${k} ${v}</span>`;
+      }).join("");
+
+      el.innerHTML = `
+      <div class="strip">${segs}</div>
+      <div class="legend">${legend}</div>
+    `;
+    }
+
+    function renderTagPills(stats) {
+      const el = document.getElementById("tagPills");
+      const tags = Array.isArray(stats.topTags) ? stats.topTags : [];
+      if (!tags.length) { el.innerHTML = "<div class='muted'>データなし</div>"; return; }
+
+      // デモは5個くらいが最も読みやすい
+      const top = tags.slice(0, 5);
+
+      el.innerHTML = `
+      <div class="pills">
+        ${top.map(t => `
+          <span class="pill">
+            <b>${String(t.tag || "")}</b>
+            <span class="n">${Number(t.count || 0)}</span>
+          </span>
+        `).join("")}
+      </div>
+    `;
+    }
+
+    // ---- ここが可視化の中心 ----
+    function renderAttr(stats) {
       const totalSel = Number(stats.selections || 0);
-
-      if (totalSel === 0) {
-        document.getElementById("attrGender").textContent = "性別: データなし";
-        document.getElementById("attrAge").textContent = "年齢: データなし";
-        document.getElementById("attrTags").innerHTML = "<div class='muted'>好みタグ: データなし</div>";
+      if (!totalSel) {
+        document.getElementById("genderDonut").innerHTML = "<div class='muted'>データなし</div>";
+        document.getElementById("ageStrip").innerHTML = "<div class='muted'>データなし</div>";
+        document.getElementById("tagPills").innerHTML = "<div class='muted'>データなし</div>";
         return;
       }
 
-      document.getElementById("attrGender").textContent =
-        "性別: male " + (g.male || 0) +
-        ", female " + (g.female || 0) +
-        ", other " + (g.other || 0) +
-        ", unknown " + (g.unknown || 0);
-
-      document.getElementById("attrAge").textContent =
-        "年齢: -19 " + (a["-19"] || 0) +
-        ", 20s " + (a["20s"] || 0) +
-        ", 30s " + (a["30s"] || 0) +
-        ", 40s " + (a["40s"] || 0) +
-        ", 50+ " + (a["50+"] || 0) +
-        ", unknown " + (a.unknown || 0);
-
-      if (!Array.isArray(tags) || tags.length === 0) {
-        document.getElementById("attrTags").innerHTML = "<div class='muted'>好みタグ: データなし</div>";
-        return;
-      }
-
-      document.getElementById("attrTags").innerHTML =
-        "<div class='muted'>好みタグ（上位）</div>" +
-        "<div class='chips'>" +
-        tags.map(function (t) {
-          return "<span class='chip'>" + t.tag + "<span class='c'>" + t.count + "</span></span>";
-        }).join("") +
-        "</div>";
+      renderDonut("genderDonut", stats.genderCounts || {});
+      renderAgeStrip(stats);
+      renderTagPills(stats);
     }
 
     function renderTargets(items) {
@@ -331,11 +504,11 @@
           const targetId = row.getAttribute("data-target-id") || "";
           const targetName = row.getAttribute("data-target-name") || "";
 
-          // ローディング
+          // ローディング（新しいIDに合わせる）
           openModal(targetName, targetId, "-", "-", 0);
-          document.getElementById("attrGender").textContent = "読み込み中...";
-          document.getElementById("attrAge").textContent = "";
-          document.getElementById("attrTags").innerHTML = "";
+          document.getElementById("genderDonut").innerHTML = "<div class='muted'>読み込み中...</div>";
+          document.getElementById("ageStrip").innerHTML = "";
+          document.getElementById("tagPills").innerHTML = "";
 
           try {
             const stats = await fetchTargetStats(targetId);
@@ -348,9 +521,9 @@
             );
             renderAttr(stats);
           } catch (e) {
-            document.getElementById("attrGender").textContent = "取得に失敗しました";
-            document.getElementById("attrAge").textContent = "";
-            document.getElementById("attrTags").innerHTML =
+            document.getElementById("genderDonut").innerHTML = "<div class='muted'>取得に失敗しました</div>";
+            document.getElementById("ageStrip").innerHTML = "";
+            document.getElementById("tagPills").innerHTML =
               "<div class='muted'>" + String(e.message || e) + "</div>";
           }
         });
@@ -366,4 +539,5 @@
   </script>
 
 </body>
+
 </html>

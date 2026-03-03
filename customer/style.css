@@ -264,3 +264,38 @@
 .tag-item input{
   cursor:pointer;
 }
+
+/* --- insights (compact) --- */
+.insight-row { display:flex; gap:12px; align-items:stretch; margin-top:8px; }
+.insight-box { background:#fff; border:1px solid #eee; border-radius:12px; padding:10px; min-width: 120px; }
+.chart-title { font-size:12px; color:#666; margin-bottom:6px; }
+
+.donutWrap { display:flex; align-items:center; gap:10px; }
+.donutText { color:#666; font-size:12px; line-height:1.5; }
+
+.strip{
+  width:100%;
+  height:12px;
+  border-radius:999px;
+  overflow:hidden;
+  background:#eee;
+  display:flex;
+  border:1px solid #eee;
+}
+.seg{ height:100%; }
+
+.legend{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+.leg{ display:flex; align-items:center; gap:6px; font-size:12px; color:#666; }
+.dot{ width:10px; height:10px; border-radius:3px; background:#ccc; display:inline-block; }
+
+.pills{ display:flex; flex-wrap:wrap; gap:8px; }
+.pill{
+  display:inline-flex; gap:8px; align-items:center;
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid #eee;
+  background:#fff;
+  font-size:12px;
+}
+.pill b{ font-size:12px; }
+.pill .n{ color:#666; }
